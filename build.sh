@@ -62,5 +62,11 @@ function commandunit() {
     -i "${_image_name}" \
     "${_args[@]}"
 }
-export -f commandunit
+
+if (return 0 2>/dev/null) then
+  export -f commandunit
+  echo "This file was sourced. Try 'commandunit --help'" >&2
+else
+  commandunit "${@}"
+fi
 
