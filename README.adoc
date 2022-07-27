@@ -1,0 +1,32 @@
+[source, yaml]
+----
+type: NORMAL
+description: []
+given:
+  description: ['This test should always be executed.']
+  stdin: []
+  shell: {name: bash, options: ['-eu', '-E']}
+  source: []
+  environmentVariables:
+    COMMANDUNIT_DEPENDENCIES_ROOT: 'eval:string:${COMMANDUNIT_DEPENDENCIES_ROOT}'
+  cmd: ':'
+  args: []
+when:
+  description: []
+  stdin: []
+  shell: {name: bash, options: ['-eu', '-E']}
+  source: []
+  environmentVariables:
+    COMMANDUNIT_DEPENDENCIES_ROOT: 'eval:string:${COMMANDUNIT_DEPENDENCIES_ROOT}'
+  cmd: 'eval:string:$(error missing attribute!)'
+  args: []
+then:
+  description: []
+  exitCode: [EQUAL, 0]
+  stdout:
+    present: []
+    absent: []
+  stderr:
+    present: []
+    absent: []
+----
