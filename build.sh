@@ -6,8 +6,7 @@ function commandunit() {
   local _suffix=""
   local _entrypoint=""
   local _loglevel="${COMMANDUNIT_LOGLEVEL:-ERROR}"
-  local _me _image_name _args _show_image_name=false _i _s _quit=false _help=false
-  _me="${USER}"
+  local _image_name _args _show_image_name=false _i _s _quit=false _help=false
   _args=()
   _s=to_func
   for _i in "${@}"; do
@@ -56,7 +55,6 @@ function commandunit() {
   ${_quit} && return 0
   # shellcheck disable=SC2086
   docker run \
-    --user="$(id -u "${_me}"):$(id -g "${_me}")" \
     --env COMMANDUNIT_PWD="${_project_basedir}" \
     --env COMMANDUNIT_LOGLEVEL="${_loglevel}" \
     -v "${_project_basedir}:${_hostfsroot_mountpoint}${_project_basedir}" \
