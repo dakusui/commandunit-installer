@@ -3,7 +3,7 @@ _SHARED_SH=yes
 
 # shellcheck disable=SC1090
 # source = lib/logging.sh
-source "${JF_BASEDIR}/lib/logging.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/logging.sh"
 
 function join_by() {
   local IFS="$1"
@@ -43,4 +43,12 @@ function print_stacktrace() {
     message "  at ${_e}"
     _i=$((_i + 1))
   done
+}
+
+function assert_that() {
+  local _message="${1}"
+  shift
+  if ! eval "${@}"; then
+    abort "$(printf "Condition was not satisfied:\n  Condition: %s\n  Detail: %s" "${_message}" "${*}")"
+  fi
 }

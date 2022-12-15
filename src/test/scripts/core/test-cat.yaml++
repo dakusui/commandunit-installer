@@ -2,22 +2,18 @@
 "$extends":
   - base/normal.json
 when:
-  description:
-    - Call 'abort' function.
   source:
     - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/lib/core.sh
-  cmd: abort
+  cmd: cat
   args:
-    - HELLO ABORT
+    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/lib/hello.txt
 then:
   exitCode:
-    - NOT_EQUAL
+    - EQUAL
     - 0
   stdout:
+    present:
+      - REGEX:Hello world.
+  stderr:
     absent:
       - REGEX:.+
-  stderr:
-    present:
-      - REGEX:HELLO ABORT
-      - REGEX:main
-      - REGEX:abort

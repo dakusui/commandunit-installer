@@ -30,3 +30,9 @@ then:
     present: []
     absent: []
 ----
+
+
+
+----
+commandunit --test-srcdir=./src/test/scripts/ --test-workdir=./commandunit-out/work  --test-reportdir=./commandunit-out/report
+----

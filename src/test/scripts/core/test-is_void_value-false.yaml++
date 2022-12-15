@@ -3,7 +3,7 @@
   - base/normal.json
 when:
   source:
-    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/lib/core.sh
   cmd: is_void_value
   args:
     - hello
