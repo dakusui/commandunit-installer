@@ -67,6 +67,6 @@ if (return 0 2>/dev/null) then
   export -f commandunit
   echo "This file was sourced. Try 'commandunit --help'" >&2
 else
-  commandunit "${@}"
+  commandunit --test-srcdir=./src/test/scripts/ --test-workdir=./commandunit-out/work  --test-reportdir=./commandunit-out/report -- "${@}"
 fi
 

@@ -36,3 +36,20 @@ then:
 ----
 commandunit --test-srcdir=./src/test/scripts/ --test-workdir=./commandunit-out/work  --test-reportdir=./commandunit-out/report
 ----
+
+https://github.com/dakusui/commandunit/issues/4
+
+
+== Test Report
+
+=== Files
+
+----
+testcase-name.json-output/
+  execution.txt
+  exit_code.txt
+  precheck.txt
+  script.txt
+  stderr.txt
+  stdout.txt
+----
