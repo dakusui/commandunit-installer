@@ -11,23 +11,23 @@ function commandunit() {
   _s=to_func
   for _i in "${@}"; do
     if [[ "${_s}" == to_func ]]; then
-        if [[ $_i == "--snapshot" ]]; then
-          _image_version="v1.18"
-          _suffix="-snapshot"
-        elif [[ $_i == "--debug" ]]; then
-          _entrypoint="--entrypoint=/bin/bash"
-        elif [[ $_i == "--show-image-name" ]]; then
-          _show_image_name=true
-        elif [[ $_i == "--quit" ]]; then
-          _quit=true
-        elif [[ $_i == "--help" ]]; then
-          _help=true
-          _args+=("${_i}")
-        elif [[ $_i == "--" ]]; then
-          _s=to_container
-        else
-          _args+=("${_i}")
-        fi
+      if [[ $_i == "--snapshot" ]]; then
+        _image_version="v1.18"
+        _suffix="-snapshot"
+      elif [[ $_i == "--debug" ]]; then
+        _entrypoint="--entrypoint=/bin/bash"
+      elif [[ $_i == "--show-image-name" ]]; then
+        _show_image_name=true
+      elif [[ $_i == "--quit" ]]; then
+        _quit=true
+      elif [[ $_i == "--help" ]]; then
+        _help=true
+        _args+=("${_i}")
+      elif [[ $_i == "--" ]]; then
+        _s=to_container
+      else
+        _args+=("${_i}")
+      fi
     else
       _args+=("${_i}")
     fi
@@ -63,10 +63,9 @@ function commandunit() {
     "${_args[@]}"
 }
 
-if (return 0 2>/dev/null) then
+if (return 0 2>/dev/null); then
   export -f commandunit
   echo "This file was sourced. Try 'commandunit --help'" >&2
 else
-  commandunit "${@}"
+  commandunit --test-srcdir=./src/test/scripts --test-workdir=./commandunit-out/work --test-reportdir=./commandunit-out/report -- "${@}"
 fi
-

@@ -3,9 +3,11 @@
   - base/normal.json
 when:
   description:
-    - Call 'abort' function.
+    - Call 'abort' function define in core.rc.
+    - This test is to illustrate the usage of the fuction.
   source:
     - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
   cmd: abort
   args:
     - HELLO ABORT

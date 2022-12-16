@@ -4,6 +4,7 @@
 when:
   source:
     - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
   cmd: is_void_value
   args:
     - hello

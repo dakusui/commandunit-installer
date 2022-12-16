@@ -1,0 +1,6 @@
+{
+  "hello": "world",
+  "$extends": [
+    "base/normal.json"
+  ]
+}
