@@ -2,7 +2,7 @@ function commandunit() {
   local _project_basedir="${PWD}"
   local _hostfsroot_mountpoint="/var/lib/commandunit"
   local _docker_repo_name="dakusui/commandunit"
-  local _image_version="v1.17"
+  local _image_version="v1.20"
   local _suffix=""
   local _entrypoint=""
   local _loglevel="${COMMANDUNIT_LOGLEVEL:-ERROR}"
@@ -55,6 +55,7 @@ function commandunit() {
   ${_quit} && return 0
   # shellcheck disable=SC2086
   docker run \
+    -u "$(id -u):$(id -g)" \
     --env COMMANDUNIT_PWD="${_project_basedir}" \
     --env COMMANDUNIT_LOGLEVEL="${_loglevel}" \
     -v "${_project_basedir}:${_hostfsroot_mountpoint}${_project_basedir}" \
@@ -65,7 +66,7 @@ function commandunit() {
 
 if (return 0 2>/dev/null); then
   export -f commandunit
-  echo "This file was sourced. Try 'commandunit --help'" >&2
+  echo "This file was sourced. Try 'commandunit --help' to see usage." >&2
 else
   commandunit --test-srcdir=./src/test/scripts --test-workdir=./commandunit-out/work --test-reportdir=./commandunit-out/report -- "${@}"
 fi
