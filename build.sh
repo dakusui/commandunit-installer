@@ -12,7 +12,7 @@ function commandunit() {
   for _i in "${@}"; do
     if [[ "${_s}" == to_func ]]; then
       if [[ $_i == "--snapshot" ]]; then
-        _image_version="v1.18"
+        _image_version="v1.22"
         _suffix="-snapshot"
       elif [[ $_i == "--debug" ]]; then
         _entrypoint="--entrypoint=/bin/bash"
