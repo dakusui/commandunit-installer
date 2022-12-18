@@ -55,13 +55,41 @@ function commandunit() {
   ${_quit} && return 0
   # shellcheck disable=SC2086
   docker run \
-    -u "$(id -u):$(id -g)" \
+    $(__commandunit_user_option) \
     --env COMMANDUNIT_PWD="${_project_basedir}" \
     --env COMMANDUNIT_LOGLEVEL="${_loglevel}" \
     -v "${_project_basedir}:${_hostfsroot_mountpoint}${_project_basedir}" \
     ${_entrypoint} \
     -i "${_image_name}" \
     "${_args[@]}"
+}
+
+function __commandunit_user_option() {
+  case "$(uname -sr)" in
+
+   Darwin*)
+     echo -n ""
+     ;;
+
+   Linux*Microsoft*)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+
+   Linux*)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+
+   CYGWIN*|MINGW*|MINGW32*|MSYS*)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+
+   # Add here more strings to compare
+   # See correspondence table at the bottom of this answer
+
+   *)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+  esac
 }
 
 if (return 0 2>/dev/null); then
