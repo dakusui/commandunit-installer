@@ -1,0 +1,4 @@
+---
+hello-yaml: "world-yaml"
+"$extends":
+  - base/normal.json

@@ -1,6 +1,8 @@
+:toc:
+
 = About this repository
 
-This repository is an example project to illustrate how to use `commanduunit` https://github.com/dakusui/commandunit[github] and how to organize a shell script based project using it.
+This repository is an example project to illustrate how to use `commanduunit` (https://github.com/dakusui/commandunit[github]) and how to organize a shell script based project using it.
 
 To just run tests under `src/main/scripts`, type the following command from your terminal:
 
@@ -53,7 +55,7 @@ ERROR:(exit code:1, pipe status: 1):
 ----
 
 One test in the example test suite should fail and the command should exit with `1`.
-Don't worry, it's just because there is one test is designed to fail intentionally in order to illustrate how a test report looks like.
+Don't worry, the one test is designed to fail intentionally in order to illustrate how a test report looks like.
 
 == Installation of `commandunit`
 
@@ -67,31 +69,23 @@ This will define a bash function whose name is `commandunit` which you can run f
 In other words, you can use the tool in your project just by copy the definition of the function to your build script.
 As long as you have `docker` command available.
 
-[INFO]
-====
-It is suggested to specify a directory that holds test scripts and directories, where `commandunit` stores its internal data and writes report.
-For instance, following is the command line that the `build.sh` executes when it is directly run.
-
-----
-commandunit --test-srcdir=./src/test/scripts --test-workdir=./commandunit-out/work  --test-reportdir=./commandunit-out/report
-----
-
-This behavior is planned to be improved under this ticket:  https://github.com/dakusui/commandunit/issues/4[improve default values of commandunit]
-====
-
 == Design of `commandunit`
 
-The `commandunit` uses `jq-front`(https://dakusui.github.io/jq-front/[jq-front]) to let users write tests.
+The `commandunit` uses `jq-front`[<<jq-front>>] to let users write tests.
 `jq-front` is a tool that allows you to use inheritances and node references (and more) in JSON files.
 
-When it finds a file ends with `.yaml++`, the tool converts it to a JSON file first and the converted file will have a suffix `.json++'.
-Then the `.json++` files will be converted into '.json' file using `jq-front`.
+When it finds a file ends with `.yaml{plus}{plus}`, the tool converts it to a JSON file first and the converted file will have a suffix `.json{plus}{plus}`.
+Then the `.json{plus}{plus}` files will be converted into '.json' file using `jq-front`.
+(preprocess stage) So, familiarizing yourself with `jq-front` 's syntax will be very useful.
 
 After this preprocessing step is finished, based on the content of the final JSON files, which should contain full-information to execute a test case, `commandunit` executes the test case.
+(run stage)
 
-So, familiarizing yourself with `jq-front` 's syntax will be very useful although you can write a test without the knowledge.
+Then, from the files generated during the "run stage", `commandunit` generates a test report.
 
 == Test Script Format
+
+Following is an example of a test script defined for `commandunit`.
 
 [source,yaml]
 .Example
@@ -103,12 +97,13 @@ when:
   description:
     - Call 'abort' function define in core.rc.
     - This test is to illustrate the usage of the function.
+  environmentVariables:
+    SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
   source:
     - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
     - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
   cmd: assert_that
   args:
-    - HELLO
     - "[["
     - hello
     - ==
@@ -127,61 +122,282 @@ then:
       - REGEX:Detail.*hello.*Hello
 ----
 
-"$extends"::
+`"$extends"`::
 This attribute specifies a template of a test definition.
 `base/normal.json` is a built-in template.
 You can define your own template and specify it here.
 The built-in templates avaialbe are found in the `commandunit` 's repository (https://github.com/dakusui/commandunit/tree/main/src/main/scripts/lib/jsonpp/base[built-in templates]).
-when::
-This section defines what will be exercised in a test.
-- description:: An array. You can describe the operation to be verified in this test.
-- environmentVariables:: An object. You can store key-value pair whose key is a name of an environment variable.
-- source:: An array you can list files to be sourced before the command (`cmd`) is executed.
-- cmd:: A string. A command (or more generally an "executable", such as a function) to be executed
-- args:: An array. You can list string values to be passed to the command (`cmd`).
-then::
-This section defines how the exercised operation is verified.
-- description:: You can describe how the operation defined in `when` should be verified.
-- exitCode:: An array. You can describe the condition that should be satisfied by an exit code of `cmd` in `when` clause.
+
+=== `when` clause
+
+This attribute defines what will be exercised in a test.
+
+`description`:: An array.
+You can describe the operation to be verified in this test.
+This attribute is currently a placce-holder and not used by the `commandunit`.
+It may be a part of `testreport.adoc` in future, though.
+
+====
+[source,yaml]
+----
+  description:
+    - Call 'abort' function define in core.rc.
+    - This test is to illustrate the usage of the function.
+----
+====
+
+`environmentVariables`:: An object.
+You can store key-value pair whose key is a name of an environment variable.
+The following example defines an environment variable `SCRITPS_DIR` and it will be available from the command defined by `cmd` and `args`.
+
+====
+[source,yaml]
+----
+  environmentVariables:
+    SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
+----
+====
+
+`source`:: An array you can list files to be sourced before the command (`cmd`) is executed.
+
+====
+[source,yaml]
+----
+  source:
+    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
+----
+====
+
+`cmd`(a string) and `args`(an array of strings)::
+A command (or more generally an "executable", such as a function) to be executed and arguments to be passed to the command.
+The following example executes a function, which is defined in `bud/core.rc`.
+this example will execute a command line: `assert_that HELLO {startsb}{startsb} hello == Hello {endsb}{endsb}`
+
+.`cmd` and `args` example
+
+====
+[source,yaml]
+----
+  cmd: assert_that
+  args:
+    - HELLO
+    - "[["
+    - hello
+    - ==
+    - Hello
+    - "]]"
+----
+====
+
+=== `then` clause
+
+This attribute defines how the exercised operation is verified.
+
+`description`:: You can describe how the operation defined in `when` should be verified.
+`exitCode`:: An array.
+You can describe the condition that should be satisfied by an exit code of `cmd` in `when` clause.
 The first element is a name of a predicate factory and the rest will be arguments passed to the factory.
 The exit code will then be checked with the predicated created by the factory.
-- stdout:: An object. You can describe the expectation for `stdout` of `cmd` in `when` clause.
+Currently available predicate factory names are following:
+- `EQUAL`
+- `NOT_EQUAL`
+
+====
+[source,yaml]
+----
+  exitCode:
+    - NOT_EQUAL
+    - 0
+----
+====
+
+`stdout` and `stderr`:: An object.
+You can describe the expectation for `stdout` and `stderr` of `cmd` in `when` clause.
 Under this object you can place `present` and `absent` attributes.
-  - present and absent:: arrays. These attributes define patterns that should present or absent in the target stream (`stdout` or `stderr`).
+`present` and `absent`:: arrays.
+These attributes define patterns that should present or absent in the target stream (`stdout` or `stderr`).
 If you give a string starting with `REGEX:`, the rest will be treated as a regular expression.
-If a matching line for a pattern in `present` attribute is find in the target stream, the conditition defined by the string will be considered satisfied.
+If a matching line for a pattern in `present` attribute is find in the target stream, the condition defined by the string will be considered satisfied.
 If and only if all the conditions defined for `present` are satisfied, the target stream will be considered "pass" for `present`.
 For `absent`, if and only if none of the conditions defined for it are satisfied, the tatarget stream will be considered "pass".
-- sterr:: An object. You can describe the expectation for `stderr` of `cmd` in `when` clause.
-For more detail, refer to `stdout`.
+Following is an example, where nothing should be output to `stdout`.
+====
+[source,yaml]
+----
+  stdout:
+    absent:
+      - REGEX:.+
+----
+====
 
-== Test Report
+=== Environment Variables
 
-In this section, the directory structure and there contents, which `commandunit` writes will be discussed.
+Following is the list of built-in environment variables of `commandunit`.
 
-== Directory Structure
+`COMMANDUNIT_DEPENDENCIES_ROOT`::
+A directory which stores built-in dependencies of `commandunit`.
+(example: `/app/dependencies`).
+`COMMANDUNIT_DIR`::
+A directory which stores the project configuration.
+(example: `/var/lib/commandunit/Users/hiroshi.ukai/Documents/github/commandunit-example/src/test/.commandunit`).
+`COMMANDUNIT_HOME`:: (internal)A home directory of the `commandunit`.
+(example: `/app`).
+`COMMANDUNIT_HOSTFSROOT_MOUNTPOINT`::
+A directory at which host side's root directory.
+(example: `/var/lib/commandunit`).
+`COMMANDUNIT_INDOCKER`:: An environment to check if this `commandunit` is executed as a docker container or not.
+(example: `true`).
+`COMMANDUNIT_LOGLEVEL`:: An environment variable to control the loglevel.
+Valid values are `ERROR`, `INFO`, and `DEBUG`.
+(example: `ERROR`).
+`COMMANDUNIT_PWD`::
+A project base directory in the host side's representation, not inside the docker container.
+(example: `/Users/hiroshi.ukai/Documents/github/commandunit-example`).
 
-Following is the directory
+=== Built-in Library
+
+The `commandunit` has a set of libraries to make it easy to write tests.
+The source of them can be found here: https://github.com/dakusui/commandunit/tree/main/src/main/scripts/dependencies/bud/lib[Built-in Libraries]
+
+In this section, useful functions for testing will be walked through.
+
+==== bud/core.rc
+
+`message`:: prints a message to `stderr`.
+`assert_that`:: tests a given condition (arguments except the first) and aborts if the condition doesn't hold.
+The first argument will be contained in a message it prints.
+`abort`:: aborts the execution. i.e., exits the test's execution with non-zero exit value.
+A stack trace will be printed to `stderr`.
+
+==== bud/logging.rc
+
+`debug`:: prints a message to `stderr` as a `DEBUG` level log message.
+`info`:: prints a message to `stderr` as a `INFO` level log message.
+`error`:: prints a message to `stderr` as a `ERROR` level log message.
+
+==== bud/json.rc
+
+`to_json_array`:: prints a JSON array composed of given arguments.
+`json_value_at`:: prints a JSON node specified by a path (second argument) in a given JSON node (first argument) `json_has_key`:: checks if an object node specified by a given path (third argument, default: `.`, which is root) in a given object node (first arguement) has a specified key (second argument).
+`true` will be printed, if it has.
+`false`, if not.
+`json_type_of`::
+prints a type (`object`, `array`, `string`, `number`, `boolean`, and `null`) of a given JSON node (first argument).
+An error will be reported if it is not a malformed JSON string.
+`json_object_merge`:: merges two object nodes into one.
+If the same key appears, the second overrides the first.
+`json_array_append`:: prints a JSON array by appending an array (second argument) to the other (first argument).
+
+== Default Directory Layout
+
+By default, `commandunit` assumes the compatible directory structure with `maven` based project [<<maven>>].
+
+[source]
+.Default Directory Layout
+----
+src/
+  main/
+  test/                                 <1>
+    .commandunit/                       <2>
+      jsonpp/
+    scripts/
+target/
+  commandunit/
+    report/                             <3>
+    work/                               <4>
+      scripts/
+        core/
+          {testcase-1}.json
+          {testcase-1}.json++
+          {testcase-1}.yaml++
+----
+
+<1> A directory to store test scripts. (test script directory)
+<2> A directory to store `commandunit` 's configuration. (test project configuration directory)
+<3> A directory to which `commandunit` writes report.
+(report directory)
+<4> A directory to which `commandunit` stores processed test scripts.
+(work directory)
+
+=== Test Script Directory and Test Project Configuration Directory
+
+By default, `./src/test` is considered a directory that stores your test scripts.
+You can specify it by `--test-srcdir` option of the `commandunit`.
+
+-----
+src/
+  test/
+    .commandunit/
+      jsonpp/
+    scripts/
+-----
+
+Right under the test script directory, you can place a test project configuration directory.
+
+=== Files in Report Directory
+
+Following is the content of "report directory" after `commandunit` execution.
+You can specify a report directory by `--test-reportdir` option of commandunit and its default is `target/commandunit/report`.
+
+[source]
+.Report Directory
+----
+target/
+  commandunit/
+    report/
+      {testsuite-directory-name}/
+        {testsuite-directory}/{testcase-1}.json-output/
+        {testsuite-directory}/{testcase-2}.json-output/
+      testreport.json
+      testreport.adoc
+----
+
+For each of the `{test-case-#}` directory, following files are generated after an execution of `when` clause in a test script.
 
 ----
-commandunit-out/
-  report/
-    {testsuite-directory-name}/
-      {testsuite-directory-name}/{testcase-name-1}.json-output/
-      {testsuite-directory-name}/{testcase-name-2}.json-output/
-  work/
-    testreport.adoc
-    testreport.json
-----
-
-=== Files
-
-----
-{testsuite-directory-name}/{testcase-name-#}.json-output/
+{testsuite-directory}/{testcase-#}.json-output/
   execution.txt
-  exit_code.txt
+  exit_code.txt <1>
   precheck.txt
-  script.txt
-  stderr.txt
-  stdout.txt
+  script.txt    <2>
+  stderr.txt    <3>
+  stdout.txt    <4>
 ----
+
+<1> A file to store exit code from `when` clause.
+<2> A file to store the script generated by converting the content of `when` clause.
+<3> A file to store the content which 2. wrote to stderr.
+<4> A file to store the content which 2. wrote to stdout.
+
+From those, `testreport.json` file, and then from it, `testreport.adoc` file is generated.
+
+==== Test Report
+
+After all tests are executed, `testreport.json` is generated and then `testreport.adoc` is generated from it.
+
+.testreport.adoc example
+====
+image:src/site/docs/resources/images/testreport-example.png[]]
+====
+
+To browse the rendered report, following tools will be useful.
+
+- AsciidocFX[<<asciidocfx>>]
+- Intellij IDEA[<<intellij>>] +  Asciidoc plugin[<<asciidoc-intellij-plugin>>]
+
+In case you need to render it into an html file, you can use a command line tool called `asciidoctor` [<<asciidoc2html>>].
+
+=== Work Directory
+
+Under work directory, `commandunit` generates internal files that usually you are not interested in.
+You can specify the path of the directory by `--test-reportdir`, and its default is `target/commandunit/work`.
+
+== References
+
+- [[jq-front, 1]] jq-front project in github.org. https://github.com/dakusui/jq-front[jq-front]: 2019
+- [[maven, 2]] Apache Maven Project https://maven.apache.org/[Apache Maven Project]: 2002-2022
+- [[asciidocfx, 3]] Asciidoc Book Editor based on JavaFX 18 https://asciidocfx.com/[Asciidoc Book Editor based on JavaFX 18]: 2022
+- [[intellij, 4]] IntelliJ IDEA https://www.jetbrains.com/idea/[IntelliJ IDEA]: 2000-2022
+- [[asciidoc-intellij-plugin, 5]] Asciidoctor Intellij Plugin Project https://plugins.jetbrains.com/plugin/7391-asciidoc[Asciidoctor Intellij Plugin Project]: 2022
+- [[asciidoc2html, 6]] Generate HTML from AsciiDoc https://docs.asciidoctor.org/asciidoctor/latest/html-backend/[Generate HTML from AsciiDoc]: 2022

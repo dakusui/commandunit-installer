@@ -12,7 +12,7 @@ function commandunit() {
   for _i in "${@}"; do
     if [[ "${_s}" == to_func ]]; then
       if [[ $_i == "--snapshot" ]]; then
-        _image_version="v1.18"
+        _image_version="v1.22"
         _suffix="-snapshot"
       elif [[ $_i == "--debug" ]]; then
         _entrypoint="--entrypoint=/bin/bash"
@@ -54,14 +54,43 @@ function commandunit() {
   fi
   ${_quit} && return 0
   # shellcheck disable=SC2086
+  # shellcheck disable=SC2046
   docker run \
-    -u "$(id -u):$(id -g)" \
+    $(__commandunit_user_option) \
     --env COMMANDUNIT_PWD="${_project_basedir}" \
     --env COMMANDUNIT_LOGLEVEL="${_loglevel}" \
     -v "${_project_basedir}:${_hostfsroot_mountpoint}${_project_basedir}" \
     ${_entrypoint} \
     -i "${_image_name}" \
     "${_args[@]}"
+}
+
+function __commandunit_user_option() {
+  case "$(uname -sr)" in
+
+   Darwin*)
+     echo -n ""
+     ;;
+
+   Linux*Microsoft*)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+
+   Linux*)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+
+   CYGWIN*|MINGW*|MSYS*)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+
+   # Add here more strings to compare
+   # See correspondence table at the bottom of this answer
+
+   *)
+     echo -n "-u" "$(id -u):$(id -g)"
+     ;;
+  esac
 }
 
 if (return 0 2>/dev/null); then
