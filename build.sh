@@ -1,4 +1,31 @@
 function commandunit() {
+  function __commandunit_user_option() {
+    case "$(uname -sr)" in
+
+     Darwin*)
+       echo -n ""
+       ;;
+
+     Linux*Microsoft*)
+       echo -n "-u" "$(id -u):$(id -g)"
+       ;;
+
+     Linux*)
+       echo -n "-u" "$(id -u):$(id -g)"
+       ;;
+
+     CYGWIN*|MINGW*|MSYS*)
+       echo -n "-u" "$(id -u):$(id -g)"
+       ;;
+
+     # Add here more strings to compare
+     # See correspondence table at the bottom of this answer
+
+     *)
+       echo -n "-u" "$(id -u):$(id -g)"
+       ;;
+    esac
+  }
   local _project_basedir="${PWD}"
   local _hostfsroot_mountpoint="/var/lib/commandunit"
   local _docker_repo_name="dakusui/commandunit"
@@ -63,34 +90,6 @@ function commandunit() {
     ${_entrypoint} \
     -i "${_image_name}" \
     "${_args[@]}"
-}
-
-function __commandunit_user_option() {
-  case "$(uname -sr)" in
-
-   Darwin*)
-     echo -n ""
-     ;;
-
-   Linux*Microsoft*)
-     echo -n "-u" "$(id -u):$(id -g)"
-     ;;
-
-   Linux*)
-     echo -n "-u" "$(id -u):$(id -g)"
-     ;;
-
-   CYGWIN*|MINGW*|MSYS*)
-     echo -n "-u" "$(id -u):$(id -g)"
-     ;;
-
-   # Add here more strings to compare
-   # See correspondence table at the bottom of this answer
-
-   *)
-     echo -n "-u" "$(id -u):$(id -g)"
-     ;;
-  esac
 }
 
 if (return 0 2>/dev/null); then
