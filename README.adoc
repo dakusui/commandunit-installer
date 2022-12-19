@@ -71,7 +71,7 @@ As long as you have `docker` command available.
 
 == Design of `commandunit`
 
-The `commandunit` uses `jq-front`<<jq-front>> to let users write tests.
+The `commandunit` uses `jq-front`[<<jq-front>>] to let users write tests.
 `jq-front` is a tool that allows you to use inheritances and node references (and more) in JSON files.
 
 When it finds a file ends with `.yaml{plus}{plus}`, the tool converts it to a JSON file first and the converted file will have a suffix `.json{plus}{plus}`.
@@ -291,17 +291,17 @@ If the same key appears, the second overrides the first.
 
 == Default Directory Layout
 
-By default, `commandunit` assumes the compatible directory structure with `maven` based project <<maven>>.
+By default, `commandunit` assumes the compatible directory structure with `maven` based project [<<maven>>].
 
 [source]
 .Default Directory Layout
 ----
 src/
   main/
-  test/
-    .commandunit/                       <1>
+  test/                                 <1>
+    .commandunit/                       <2>
       jsonpp/
-    scripts/                            <2>
+    scripts/
 target/
   commandunit/
     report/                             <3>
@@ -313,16 +313,32 @@ target/
           {testcase-1}.yaml++
 ----
 
-<1> A directory to store `commandunit` 's configuration
-<2> A directory to store test scripts.
+<1> A directory to store test scripts. (test script directory)
+<2> A directory to store `commandunit` 's configuration. (test project configuration directory)
 <3> A directory to which `commandunit` writes report.
-(A report directory)
+(report directory)
 <4> A directory to which `commandunit` stores processed test scripts.
-(A work directory)
+(work directory)
+
+=== Test Script Directory and Test Project Configuration Directory
+
+By default, `./src/test` is considered a directory that stores your test scripts.
+You can specify it by `--test-srcdir` option of the `commandunit`.
+
+-----
+src/
+  test/
+    .commandunit/
+      jsonpp/
+    scripts/
+-----
+
+Right under the test script directory, you can place a test project configuration directory.
 
 === Files in Report Directory
 
 Following is the content of "report directory" after `commandunit` execution.
+You can specify a report directory by `--test-reportdir` option of commandunit and its default is `target/commandunit/report`.
 
 [source]
 .Report Directory
@@ -365,17 +381,23 @@ After all tests are executed, `testreport.json` is generated and then `testrepor
 image:src/site/docs/resources/images/testreport-example.png[]]
 ====
 
-=== Test Project Configuration Directory
+To browse the rendered report, following tools will be useful.
 
------
-src/
-  test/
-    .commandunit/
-    scripts/
+- AsciidocFX[<<asciidocfx>>]
+- Intellij IDEA[<<intellij>>] +  Asciidoc plugin[<<asciidoc-intellij-plugin>>]
 
------
+In case you need to render it into an html file, you can use a command line tool called `asciidoctor` [<<asciidoc2html>>].
+
+=== Work Directory
+
+Under work directory, `commandunit` generates internal files that usually you are not interested in.
+You can specify the path of the directory by `--test-reportdir`, and its default is `target/commandunit/work`.
 
 == References
 
 - [[jq-front, 1]] jq-front project in github.org. https://github.com/dakusui/jq-front[jq-front]: 2019
 - [[maven, 2]] Apache Maven Project https://maven.apache.org/[Apache Maven Project]: 2002-2022
+- [[asciidocfx, 3]] Asciidoc Book Editor based on JavaFX 18 https://asciidocfx.com/[Asciidoc Book Editor based on JavaFX 18]: 2022
+- [[intellij, 4]] IntelliJ IDEA https://www.jetbrains.com/idea/[IntelliJ IDEA]: 2000-2022
+- [[asciidoc-intellij-plugin, 5]] Asciidoctor Intellij Plugin Project https://plugins.jetbrains.com/plugin/7391-asciidoc[Asciidoctor Intellij Plugin Project]: 2022
+- [[asciidoc2html, 6]] Generate HTML from AsciiDoc https://docs.asciidoctor.org/asciidoctor/latest/html-backend/[Generate HTML from AsciiDoc]: 2022
