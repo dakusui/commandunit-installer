@@ -1,0 +1,22 @@
+---
+"$extends":
+  - core/base-yaml.yaml
+when:
+  environmentVariables:
+    SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
+  source:
+    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
+    - ${SCRIPTS_DIR}/target_lib.rc
+  cmd: cat
+  args:
+    - ${SCRIPTS_DIR}/hello.txt
+then:
+  exitCode:
+    - EQUAL
+    - 0
+  stdout:
+    present:
+      - REGEX:Hello world
+  stderr:
+    absent:
+      - REGEX:.+

@@ -54,6 +54,7 @@ function commandunit() {
   fi
   ${_quit} && return 0
   # shellcheck disable=SC2086
+  # shellcheck disable=SC2046
   docker run \
     $(__commandunit_user_option) \
     --env COMMANDUNIT_PWD="${_project_basedir}" \
@@ -79,7 +80,7 @@ function __commandunit_user_option() {
      echo -n "-u" "$(id -u):$(id -g)"
      ;;
 
-   CYGWIN*|MINGW*|MINGW32*|MSYS*)
+   CYGWIN*|MINGW*|MSYS*)
      echo -n "-u" "$(id -u):$(id -g)"
      ;;
 
