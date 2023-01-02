@@ -107,9 +107,9 @@ function __commandunit_clone_commandunit() {
   local _git_tag_option="${1}" _snapshot_suffix="${2}"
   local _out
   # shellcheck disable=SC2086
-  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}" | )"
+  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}" 2>&1)"
   [[ "${?}" != 0 ]] &&  {
-    echo "${_out}"
+    echo "${_out}" >&2
     return 1
   }
 }
