@@ -105,9 +105,15 @@ function commandunit() {
 
 function __commandunit_clone_commandunit() {
   local _git_tag_option="${1}" _snapshot_suffix="${2}"
+  local _out
   # shellcheck disable=SC2086
-  git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}"
+  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}")"
+  [[ "${?}" != 0 ]] ||  {
+    echo "${_out}"
+    exit 1
+  }
 }
+
 function __commandunit_clean_cloned_commandunit() {
   local _suffix="${1}"
   #      +-- Safeguard for a bug, where the variable becomes empty.
@@ -126,7 +132,7 @@ function __commandunit_refresh_cloned_commandunit() {
 }
 function __commandunit_exec_commandunit_native() {
   local _suffix="${1}"
-  "${PROJECT_BASE_DIR}/${COMMANDUNIT_SOURCE_DIR}/commandunit${_suffix}" "${@}"
+  "${COMMANDUNIT_SOURCE_DIR}/src/main/scripts/bin/commandunit" "${@}"
 }
 
 export PROJECT_BASE_DIR="${PWD}"
@@ -134,6 +140,8 @@ export COMMANDUNIT_SOURCE_DIR="${PROJECT_BASE_DIR}/src/dependencies/commandunit"
 export COMMANDUNIT_MINOR_VERSION="21"
 export COMMANDUNIT_VERSION="v1.${COMMANDUNIT_MINOR_VERSION}"
 export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
+# To workaround: https://github.com/dakusui/commandunit/issues/13
+export COMMANDUNIT_PWD="${PROJECT_BASE_DIR}"
 
 if (return 0 2>/dev/null); then
   export -f commandunit
