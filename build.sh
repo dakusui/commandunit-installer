@@ -99,7 +99,10 @@ function commandunit() {
   if [[ "${_native}" == "no" ]]; then
     __commandunit_exec_commandunit_docker "${_args[@]}"
   else
-    __commandunit_exec_commandunit_native "${_args[@]}"
+    if [[ "${_suffix}" != "" ]]; then
+      __commandunit_refresh_cloned_commandunit "" "${_suffix}"
+    fi
+    __commandunit_exec_commandunit_native "${_suffix}" "${_args[@]}"
   fi
 }
 
@@ -132,7 +135,8 @@ function __commandunit_refresh_cloned_commandunit() {
 }
 function __commandunit_exec_commandunit_native() {
   local _suffix="${1}"
-  "${COMMANDUNIT_SOURCE_DIR}/src/main/scripts/bin/commandunit" "${@}"
+  shift
+  "${COMMANDUNIT_SOURCE_DIR}${_suffix}/src/main/scripts/bin/commandunit" "${@}"
 }
 
 export PROJECT_BASE_DIR="${PWD}"
