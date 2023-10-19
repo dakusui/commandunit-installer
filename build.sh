@@ -33,6 +33,7 @@ function commandunit() {
       $(__commandunit_user_option) \
       --env COMMANDUNIT_PWD="${_project_basedir}" \
       --env COMMANDUNIT_LOGLEVEL="${_loglevel}" \
+      --env TMPDIR="/tmp" \
       -v "${_project_basedir}:${_hostfsroot_mountpoint}${_project_basedir}" \
       ${_entrypoint} \
       -i "${_image_name}" \
