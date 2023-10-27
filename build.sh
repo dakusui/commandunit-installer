@@ -3,7 +3,7 @@ function commandunit() {
     case "$(uname -sr)" in
 
     Darwin*)
-      echo -n ""
+      echo -n "-u" "1000:1000"
       ;;
 
     Linux*Microsoft*)
@@ -142,7 +142,7 @@ function __commandunit_exec_commandunit_native() {
 
 export PROJECT_BASE_DIR="${PWD}"
 export COMMANDUNIT_SOURCE_DIR="${PROJECT_BASE_DIR}/src/dependencies/commandunit"
-export COMMANDUNIT_MINOR_VERSION="21"
+export COMMANDUNIT_MINOR_VERSION="22"
 export COMMANDUNIT_VERSION="v1.${COMMANDUNIT_MINOR_VERSION}"
 export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
 # To workaround: https://github.com/dakusui/commandunit/issues/13
