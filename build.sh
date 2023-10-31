@@ -111,9 +111,8 @@ function __commandunit_clone_commandunit() {
   local _git_tag_option="${1}" _snapshot_suffix="${2}"
   local _out
   # shellcheck disable=SC2086
-  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}" 2>&1)"
-  [[ "${?}" != 0 ]] &&  {
-    echo "${_out}" >&2
+  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}" 2>&1)" || {
+    echo "Failed to clone<: ${_out}>" >&2
     return 1
   }
 }
@@ -131,13 +130,27 @@ function __commandunit_clean_cloned_commandunit() {
 }
 function __commandunit_refresh_cloned_commandunit() {
   local _git_tag_option="${1}" _suffix="${2}"
-  __commandunit_clean_cloned_commandunit "${_suffix}"
+  __commandunit_clean_cloned_commandunit "${_suffix}" || return "${?}"
   __commandunit_clone_commandunit "${_git_tag_option}" "${_suffix}"
 }
+
 function __commandunit_exec_commandunit_native() {
   local _suffix="${1}"
   shift
   "${COMMANDUNIT_SOURCE_DIR}${_suffix}/src/main/scripts/bin/commandunit" "${@}"
+}
+
+function main() {
+  if [ "${BASH_SOURCE[0]}" == "$0" ]; then
+    # If being executed.
+    rm -fr target commandunit-out
+    commandunit --commandunit-dir=. -- "${@}"
+  else
+    # If being sourced.
+    export -f commandunit
+    __commandunit_refresh_cloned_commandunit "--branch ${COMMANDUNIT_VERSION}" "" || return "${?}"
+    echo "This file was sourced. Try 'commandunit --help' to see usage." >&2
+  fi
 }
 
 export PROJECT_BASE_DIR="${PWD}"
@@ -148,10 +161,4 @@ export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
 # To workaround: https://github.com/dakusui/commandunit/issues/13
 export COMMANDUNIT_PWD="${PROJECT_BASE_DIR}"
 
-if (return 0 2>/dev/null); then
-  export -f commandunit
-  __commandunit_refresh_cloned_commandunit "--branch ${COMMANDUNIT_VERSION}" ""
-  echo "This file was sourced. Try 'commandunit --help' to see usage." >&2
-else
-  commandunit --test-srcdir=./src/test/scripts --test-workdir=./commandunit-out/work --test-reportdir=./commandunit-out/report -- "${@}"
-fi
+main "${@}"

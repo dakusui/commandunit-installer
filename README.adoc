@@ -83,7 +83,8 @@ After this preprocessing step is finished, based on the content of the final JSO
 
 Then, from the files generated during the "run stage", `commandunit` generates a test report.
 
-== Test Script Format
+== Usage
+=== Test Script Format
 
 Following is an example of a test script defined for `commandunit`.
 
@@ -128,7 +129,7 @@ This attribute specifies a template of a test definition.
 You can define your own template and specify it here.
 The built-in templates avaialbe are found in the `commandunit` 's repository (https://github.com/dakusui/commandunit/tree/main/src/main/scripts/lib/jsonpp/base[built-in templates]).
 
-=== `when` clause
+==== `when` clause
 
 This attribute defines what will be exercised in a test.
 
@@ -190,7 +191,7 @@ this example will execute a command line: `assert_that HELLO {startsb}{startsb} 
 ----
 ====
 
-=== `then` clause
+==== `then` clause
 
 This attribute defines how the exercised operation is verified.
 
@@ -231,7 +232,7 @@ Following is an example, where nothing should be output to `stdout`.
 ----
 ====
 
-=== Environment Variables
+==== Environment Variables
 
 Following is the list of built-in environment variables of `commandunit`.
 
@@ -255,14 +256,14 @@ Valid values are `ERROR`, `INFO`, and `DEBUG`.
 A project base directory in the host side's representation, not inside the docker container.
 (example: `/Users/hiroshi.ukai/Documents/github/commandunit-example`).
 
-=== Built-in Library
+==== Built-in Library
 
 The `commandunit` has a set of libraries to make it easy to write tests.
 The source of them can be found here: https://github.com/dakusui/commandunit/tree/main/src/main/scripts/dependencies/bud/lib[Built-in Libraries]
 
 In this section, useful functions for testing will be walked through.
 
-==== bud/core.rc
+===== bud/core.rc
 
 `message`:: prints a message to `stderr`.
 `assert_that`:: tests a given condition (arguments except the first) and aborts if the condition doesn't hold.
@@ -270,13 +271,13 @@ The first argument will be contained in a message it prints.
 `abort`:: aborts the execution. i.e., exits the test's execution with non-zero exit value.
 A stack trace will be printed to `stderr`.
 
-==== bud/logging.rc
+===== bud/logging.rc
 
 `debug`:: prints a message to `stderr` as a `DEBUG` level log message.
 `info`:: prints a message to `stderr` as a `INFO` level log message.
 `error`:: prints a message to `stderr` as a `ERROR` level log message.
 
-==== bud/json.rc
+===== bud/json.rc
 
 `to_json_array`:: prints a JSON array composed of given arguments.
 `json_value_at`:: prints a JSON node specified by a path (second argument) in a given JSON node (first argument) `json_has_key`:: checks if an object node specified by a given path (third argument, default: `.`, which is root) in a given object node (first arguement) has a specified key (second argument).
