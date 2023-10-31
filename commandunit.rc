@@ -47,7 +47,7 @@ function commandunit() {
   local _entrypoint=""
   local _native="no"
   local _loglevel="${COMMANDUNIT_LOGLEVEL:-ERROR}"
-  local _image_name _args _show_image_name=false _i _s _quit=false _help=false
+  local _image_name _args _show_image_name=false _i _s _clean=false _quit=false _help=false
   _args=()
   _s=to_func
   for _i in "${@}"; do
@@ -61,6 +61,8 @@ function commandunit() {
         _entrypoint="--entrypoint=/bin/bash"
       elif [[ $_i == "--show-image-name" ]]; then
         _show_image_name=true
+      elif [[ $_i == "--clean" ]]; then
+        _clean=true
       elif [[ $_i == "--quit" ]]; then
         _quit=true
       elif [[ $_i == "--help" ]]; then
@@ -87,6 +89,7 @@ function commandunit() {
     echo "Options not listed here or ones after the separator (--) are passed to the docker image directly."
     echo ""
     echo "Wrapper options:"
+    echo "--clean           Removes target and commandunit-out directory under the current directory."
     echo "--snapshot        Use the snapshot image instead of the latest released one. Development purpose only."
     echo "--native          Use the native version of commandunit."
     echo "--debug           Get the shell of the docker image. Type Ctrl-D to quit it. Development purpose only."
@@ -96,6 +99,11 @@ function commandunit() {
     echo "--                A separator to let this wrapper know the options after it should be passed directly to the image"
     echo ""
   fi
+  ${_clean} && {
+    for i in "./target" "./commandunit-out"; do
+      rm -fr "${i}" || :
+    done
+  }
   ${_quit} && return 0
   if [[ "${_native}" == "no" ]]; then
     __commandunit_exec_commandunit_docker "${_args[@]}"

@@ -20,5 +20,4 @@ export COMMANDUNIT_VERSION="v1.${COMMANDUNIT_MINOR_VERSION}"
 export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
 # To workaround: https://github.com/dakusui/commandunit/issues/13
 export COMMANDUNIT_PWD="${PROJECT_BASE_DIR}"
-
 main "${@}"

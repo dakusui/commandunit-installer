@@ -54,8 +54,8 @@ ERROR:(exit code:1, pipe status: 1):
   at /app/bin/commandunit:189 (main)
 ----
 
-One test in the example test suite should fail and the command should exit with `1`.
-Don't worry, the one test is designed to fail intentionally in order to illustrate how a test report looks like.
+One and only one test in the example test suite should fail and the command should exit with `1`.
+Don't worry, the one (`core/test-cat-failing.json`) is designed to fail intentionally in order to illustrate how a test report looks like.
 
 == Installation of `commandunit`
 
