@@ -1,11 +1,9 @@
 function commandunit() {
   export PROJECT_BASE_DIR="${PWD}"
   export COMMANDUNIT_SOURCE_DIR="${PROJECT_BASE_DIR}/src/dependencies/commandunit"
-  export COMMANDUNIT_MINOR_VERSION="23"
-  export COMMANDUNIT_VERSION="v1.${COMMANDUNIT_MINOR_VERSION}"
+  export COMMANDUNIT_VERSION="${COMMANDUNIT_VERSION:-v1.23}"
+  export COMMANDUNIT_MINOR_VERSION="${COMMANDUNIT_VERSION##*.}"
   export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
-  # To workaround: https://github.com/dakusui/commandunit/issues/13
-  export COMMANDUNIT_PWD="${PROJECT_BASE_DIR}"
   export BUD_DEBUG=enabled
   function __commandunit_user_option() {
     case "$(uname -sr)" in
@@ -66,7 +64,7 @@ function commandunit() {
         _suffix="-snapshot"
       elif [[ $_i == "--native" ]]; then
         _native="yes"
-      elif [[ $_i == "--debug" ]]; then
+      elif [[ $_i == "--debug-shell" ]]; then
         _entrypoint="--entrypoint=/bin/bash"
       elif [[ $_i == "--show-image-name" ]]; then
         _show_image_name=true
@@ -96,9 +94,9 @@ function commandunit() {
     echo "Options not listed here or ones after the separator (--) are passed to the docker image directly."
     echo ""
     echo "Wrapper options:"
+    echo "--native          Use the 'native' version of commandunit."
     echo "--snapshot        Use the snapshot image instead of the latest released one. Development purpose only."
-    echo "--native          Use the native version of commandunit."
-    echo "--debug           Get the shell of the docker image. Type Ctrl-D to quit it. Development purpose only."
+    echo "--debug-shell     Get the shell of the docker image. Type Ctrl-D to quit it. Development purpose only."
     echo "--show-image-name Print the image name. Useful to figure out the version."
     echo "--quit            Quit before running the image. With --show-image-name, useful to figure out the image version"
     echo "--help            Show this help and pass the --help option to the docker image."
