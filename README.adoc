@@ -126,7 +126,7 @@ then:
 This attribute specifies a template of a test definition.
 `base/normal.json` is a built-in template.
 You can define your own template and specify it here.
-The built-in templates avaialbe are found in the `commandunit` 's repository (https://github.com/dakusui/commandunit/tree/main/src/main/scripts/lib/jsonpp/base[built-in templates]).
+The built-in templates available are found in the `commandunit` 's repository (https://github.com/dakusui/commandunit/tree/main/src/main/scripts/lib/jsonpp/base[built-in templates]).
 
 === `when` clause
 
