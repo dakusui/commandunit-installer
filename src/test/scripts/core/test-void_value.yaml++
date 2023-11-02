@@ -6,7 +6,7 @@ when:
     - Call 'void_value' function, which should return a value that represents nothing.
   source:
     - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
-    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
+    - ${COMMANDUNIT_PROJECT_DIR}/src/main/scripts/target_lib.rc
   cmd: void_value
 then:
   exitCode:

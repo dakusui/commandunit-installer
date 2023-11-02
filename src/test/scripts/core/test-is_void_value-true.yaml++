@@ -4,7 +4,7 @@
 when:
   source:
     - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
-    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
+    - ${COMMANDUNIT_PROJECT_DIR}/src/main/scripts/target_lib.rc
   cmd: is_void_value
   args:
     - BUD_VOID:4a19bc62ecb732c9bd99fcc834116227

@@ -1,7 +1,7 @@
 function commandunit() {
   export PROJECT_BASE_DIR="${PWD}"
   export COMMANDUNIT_SOURCE_DIR="${PROJECT_BASE_DIR}/src/dependencies/commandunit"
-  export COMMANDUNIT_MINOR_VERSION="22"
+  export COMMANDUNIT_MINOR_VERSION="23"
   export COMMANDUNIT_VERSION="v1.${COMMANDUNIT_MINOR_VERSION}"
   export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
   # To workaround: https://github.com/dakusui/commandunit/issues/13
@@ -109,6 +109,20 @@ function commandunit() {
   if [[ "${_native}" == "no" ]]; then
     __commandunit_exec_commandunit_docker "${_args[@]}"
   else
+    which jq-front || {
+      function jq-front() {
+        docker run --rm -i \
+          -v /:/var/lib/jf \
+          -v "${HOME}/.jq-front.rc:/root/.jq-front.rc" \
+          -e JF_PATH_BASE="/var/lib/jf" \
+          -e JF_PATH="${JF_PATH}" \
+          -e JF_DEBUG=${JF_DEBUG:-disabled} \
+          -e JF_CWD="$(pwd)" \
+          -e COMMANDUNIT_DEPENDENCIES_ROOT="${COMMANDUNIT_DEPENDENCIES_ROOT:?Required environment variable is not set.}" \
+          dakusui/jq-front:"${JF_DOCKER_TAG:-v0.54}" "${@}"
+      } &&
+      export -f jq-front
+    }
     #     __commandunit_refresh_cloned_commandunit "--branch ${COMMANDUNIT_VERSION}" "${_commandunit_version}" || return "${?}"
     # __commandunit_refresh_cloned_commandunit "" "${_suffix}"
     local _local_source_suffix
