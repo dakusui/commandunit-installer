@@ -6,6 +6,7 @@ function commandunit() {
   export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
   # To workaround: https://github.com/dakusui/commandunit/issues/13
   export COMMANDUNIT_PWD="${PROJECT_BASE_DIR}"
+  export BUD_DEBUG=enabled
   function __commandunit_user_option() {
     case "$(uname -sr)" in
 
@@ -51,6 +52,7 @@ function commandunit() {
   local _docker_repo_name="dakusui/commandunit"
   local _image_version="${COMMANDUNIT_VERSION}"
   local _suffix=""
+  local _commandunit_version="${COMMANDUNIT_VERSION}"
   local _entrypoint=""
   local _native="no"
   local _loglevel="${COMMANDUNIT_LOGLEVEL:-ERROR}"
@@ -107,20 +109,27 @@ function commandunit() {
   if [[ "${_native}" == "no" ]]; then
     __commandunit_exec_commandunit_docker "${_args[@]}"
   else
-    #     __commandunit_refresh_cloned_commandunit "--branch ${COMMANDUNIT_VERSION}" "" || return "${?}"
+    #     __commandunit_refresh_cloned_commandunit "--branch ${COMMANDUNIT_VERSION}" "${_commandunit_version}" || return "${?}"
     # __commandunit_refresh_cloned_commandunit "" "${_suffix}"
-    __commandunit_exec_commandunit_native "${_suffix}" "${_args[@]}"
+    local _local_source_suffix
+    if [[ "${_suffix}" ==  "-snapshot" ]]; then
+      _local_source_suffix="${_suffix}"
+      # Remove already loaded one, then... do clone
+      __commandunit_clone_commandunit "--branch main" "${_local_source_suffix}"
+    else
+      _local_source_suffix="-${_commandunit_version}"
+      if [[ ! -e "${COMMANDUNIT_SOURCE_DIR}-${_commandunit_version}" ]]; then
+        __commandunit_clone_commandunit "--branch ${_commandunit_version}" "${_local_source_suffix}"
+      fi
+    fi
+    __commandunit_exec_commandunit_native "${_local_source_suffix}" "${_args[@]}"
   fi
 }
 
-function __commandunit_clone_commandunit() {
-  local _git_tag_option="${1}" _snapshot_suffix="${2}"
-  local _out
-  # shellcheck disable=SC2086
-  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}" 2>&1)" || {
-    echo "Failed to clone<: ${_out}>" >&2
-    return 1
-  }
+function __commandunit_refresh_cloned_commandunit() {
+  local _git_tag_option="${1}" _suffix="${2}"
+  __commandunit_clean_cloned_commandunit "${_suffix}" || return "${?}"
+  __commandunit_clone_commandunit "${_git_tag_option}" "${_suffix}"
 }
 
 function __commandunit_clean_cloned_commandunit() {
@@ -134,10 +143,15 @@ function __commandunit_clean_cloned_commandunit() {
     fi
   fi
 }
-function __commandunit_refresh_cloned_commandunit() {
-  local _git_tag_option="${1}" _suffix="${2}"
-  __commandunit_clean_cloned_commandunit "${_suffix}" || return "${?}"
-  __commandunit_clone_commandunit "${_git_tag_option}" "${_suffix}"
+
+function __commandunit_clone_commandunit() {
+  local _git_tag_option="${1}" _snapshot_suffix="${2}"
+  local _out
+  # shellcheck disable=SC2086
+  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}" 2>&1)" || {
+    echo "Failed to clone<: ${_out}>" >&2
+    return 1
+  }
 }
 
 function __commandunit_exec_commandunit_native() {

@@ -232,6 +232,12 @@ Following is an example, where nothing should be output to `stdout`.
 ----
 ====
 
+==== Requirements for "native" mode
+
+The `commandunit` can be used without using Docker.
+
+- `tap`::
+
 ==== Environment Variables
 
 Following is the list of built-in environment variables of `commandunit`.
