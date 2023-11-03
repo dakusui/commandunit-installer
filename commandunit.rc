@@ -127,6 +127,7 @@ function commandunit() {
     if [[ "${_suffix}" ==  "-snapshot" ]]; then
       _local_source_suffix="${_suffix}"
       # Remove already loaded one, then... do clone
+      __commandunit_clean_cloned_commandunit "${_local_source_suffix}"
       __commandunit_clone_commandunit "--branch main" "${_local_source_suffix}"
     else
       _local_source_suffix="-${_commandunit_version}"
@@ -136,12 +137,6 @@ function commandunit() {
     fi
     __commandunit_exec_commandunit_native "${_local_source_suffix}" "${_args[@]}"
   fi
-}
-
-function __commandunit_refresh_cloned_commandunit() {
-  local _git_tag_option="${1}" _suffix="${2}"
-  __commandunit_clean_cloned_commandunit "${_suffix}" || return "${?}"
-  __commandunit_clone_commandunit "${_git_tag_option}" "${_suffix}"
 }
 
 function __commandunit_clean_cloned_commandunit() {
