@@ -1,9 +1,8 @@
 function commandunit() {
   export PROJECT_BASE_DIR="${PWD}"
-  export COMMANDUNIT_SOURCE_DIR="${PROJECT_BASE_DIR}/src/dependencies/commandunit"
-  export COMMANDUNIT_VERSION="${COMMANDUNIT_VERSION:-v1.23}"
-  export COMMANDUNIT_MINOR_VERSION="${COMMANDUNIT_VERSION##*.}"
-  export COMMANDUNIT_SNAPSHOT_VERSION="v1.$((${COMMANDUNIT_MINOR_VERSION} + 1))"
+  export COMMANDUNIT_PWD="${PROJECT_BASE_DIR}" # Referenced by commandunit itself.
+  export COMMANDUNIT_SOURCE_DIR_PREFIX="${PROJECT_BASE_DIR}/src/dependencies/commandunit"
+  export COMMANDUNIT_DEFAULT_VERSION="v1.24"
   export BUD_DEBUG=enabled
   function __commandunit_user_option() {
     case "$(uname -sr)" in
@@ -48,9 +47,8 @@ function commandunit() {
   local _project_basedir="${PROJECT_BASE_DIR}"
   local _hostfsroot_mountpoint="/var/lib/commandunit"
   local _docker_repo_name="dakusui/commandunit"
-  local _image_version="${COMMANDUNIT_VERSION}"
+  local _image_version="${COMMANDUNIT_DEFAULT_VERSION}"
   local _suffix=""
-  local _commandunit_version="${COMMANDUNIT_VERSION}"
   local _entrypoint=""
   local _native="no"
   local _loglevel="${COMMANDUNIT_LOGLEVEL:-ERROR}"
@@ -59,9 +57,16 @@ function commandunit() {
   _s=to_func
   for _i in "${@}"; do
     if [[ "${_s}" == to_func ]]; then
-      if [[ $_i == "--snapshot" ]]; then
-        _image_version="${COMMANDUNIT_SNAPSHOT_VERSION}"
-        _suffix="-snapshot"
+      if [[ $_i == "--version="* ]]; then
+        local _v="${_i#*=}"
+        if [[ "${_v}" == "snapshot" ]]; then
+          # _image_version="${COMMANDUNIT_VERSION%.*}.$((${COMMANDUNIT_VERSION##*.} + 1))"
+          local _default_version="${COMMANDUNIT_DEFAULT_VERSION}" # v1.24
+          _image_version="${_default_version%.*}.$((${_default_version##*.} + 1))"
+          _suffix="-snapshot"
+        else
+          _image_version="${_v}"
+        fi
       elif [[ $_i == "--native" ]]; then
         _native="yes"
       elif [[ $_i == "--debug-shell" ]]; then
@@ -91,23 +96,23 @@ function commandunit() {
     echo ""
     echo "A wrapper function for 'commandunit' to invoke its docker image.".
     echo "Followings are switching options to control the wrapper's behaviour."
-    echo "Options not listed here or ones after the separator (--) are passed to the docker image directly."
+    echo "Options not listed here or ones after the separator (--) are passed to the commandunit implementation directly."
     echo ""
     echo "Wrapper options:"
-    echo "--native          Use the 'native' version of commandunit."
-    echo "--snapshot        Use the snapshot image instead of the latest released one. Development purpose only."
-    echo "--debug-shell     Get the shell of the docker image. Type Ctrl-D to quit it. Development purpose only."
-    echo "--show-image-name Print the image name. Useful to figure out the version."
-    echo "--quit            Quit before running the image. With --show-image-name, useful to figure out the image version"
-    echo "--help            Show this help and pass the --help option to the docker image."
-    echo "--                A separator to let this wrapper know the options after it should be passed directly to the image"
+    echo "--native            Use the 'native' version of commandunit."
+    echo "--version={VERSION} Use the specified version of commandunit. If 'snapshot' is given, a version under development is used (default: ${COMMANDUNIT_DEFAULT_VERSION})."
+    echo "--debug-shell       Get the shell of the docker image. Type Ctrl-D to quit it. Development purpose only."
+    echo "--show-image-name   Print the image name. Useful to figure out the version."
+    echo "--quit              Quit before running the image. With --show-image-name, useful to figure out the image version"
+    echo "--help              Show this help and pass the --help option to the docker image."
+    echo "--                  A separator to let this wrapper know the options after it should be passed directly to the image"
     echo ""
   fi
   ${_quit} && return 0
   if [[ "${_native}" == "no" ]]; then
     __commandunit_exec_commandunit_docker "${_args[@]}"
   else
-    which jq-front || {
+    which jq-front > /dev/null || {
       function jq-front() {
         docker run --rm -i \
           -v /:/var/lib/jf \
@@ -121,8 +126,6 @@ function commandunit() {
       } &&
       export -f jq-front
     }
-    #     __commandunit_refresh_cloned_commandunit "--branch ${COMMANDUNIT_VERSION}" "${_commandunit_version}" || return "${?}"
-    # __commandunit_refresh_cloned_commandunit "" "${_suffix}"
     local _local_source_suffix
     if [[ "${_suffix}" ==  "-snapshot" ]]; then
       _local_source_suffix="${_suffix}"
@@ -130,9 +133,9 @@ function commandunit() {
       __commandunit_clean_cloned_commandunit "${_local_source_suffix}"
       __commandunit_clone_commandunit "--branch main" "${_local_source_suffix}"
     else
-      _local_source_suffix="-${_commandunit_version}"
-      if [[ ! -e "${COMMANDUNIT_SOURCE_DIR}-${_commandunit_version}" ]]; then
-        __commandunit_clone_commandunit "--branch ${_commandunit_version}" "${_local_source_suffix}"
+      _local_source_suffix="-${_image_version}"
+      if [[ ! -e "${COMMANDUNIT_SOURCE_DIR_PREFIX}-${_image_version}" ]]; then
+        __commandunit_clone_commandunit "--branch ${_image_version}" "${_local_source_suffix}"
       fi
     fi
     __commandunit_exec_commandunit_native "${_local_source_suffix}" "${_args[@]}"
@@ -144,9 +147,9 @@ function __commandunit_clean_cloned_commandunit() {
   #      +-- Safeguard for a bug, where the variable becomes empty.
   #     |    Because this function removes everything under the dir.
   #     V
-  if [[ "${COMMANDUNIT_SOURCE_DIR}${_suffix}" == *"/src/dependencies/"* ]]; then
-    if [[ -d "${COMMANDUNIT_SOURCE_DIR}${_suffix}" ]]; then
-      rm -fr "${COMMANDUNIT_SOURCE_DIR}${_suffix}"
+  if [[ "${COMMANDUNIT_SOURCE_DIR_PREFIX}${_suffix}" == *"/src/dependencies/"* ]]; then
+    if [[ -d "${COMMANDUNIT_SOURCE_DIR_PREFIX}${_suffix}" ]]; then
+      rm -fr "${COMMANDUNIT_SOURCE_DIR_PREFIX}${_suffix}"
     fi
   fi
 }
@@ -155,7 +158,7 @@ function __commandunit_clone_commandunit() {
   local _git_tag_option="${1}" _snapshot_suffix="${2}"
   local _out
   # shellcheck disable=SC2086
-  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR}${_snapshot_suffix}" 2>&1)" || {
+  _out="$(git clone --depth 1 ${_git_tag_option} https://github.com/dakusui/commandunit.git "${COMMANDUNIT_SOURCE_DIR_PREFIX}${_snapshot_suffix}" 2>&1)" || {
     echo "Failed to clone<: ${_out}>" >&2
     return 1
   }
@@ -164,5 +167,5 @@ function __commandunit_clone_commandunit() {
 function __commandunit_exec_commandunit_native() {
   local _suffix="${1}"
   shift
-  "${COMMANDUNIT_SOURCE_DIR}${_suffix}/src/main/scripts/bin/commandunit" "${@}"
+  "${COMMANDUNIT_SOURCE_DIR_PREFIX}${_suffix}/src/main/scripts/bin/commandunit" "${@}"
 }
