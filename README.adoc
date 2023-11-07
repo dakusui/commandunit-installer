@@ -54,8 +54,8 @@ ERROR:(exit code:1, pipe status: 1):
   at /app/bin/commandunit:189 (main)
 ----
 
-One test in the example test suite should fail and the command should exit with `1`.
-Don't worry, the one test is designed to fail intentionally in order to illustrate how a test report looks like.
+One and only one test in the example test suite should fail and the command should exit with `1`.
+Don't worry, the one (`core/test-cat-failing.json`) is designed to fail intentionally in order to illustrate how a test report looks like.
 
 == Installation of `commandunit`
 
@@ -71,7 +71,7 @@ As long as you have `docker` command available.
 
 == Design of `commandunit`
 
-The `commandunit` uses `jq-front`[<<jq-front>>] to let users write tests.
+The `commandunit` uses `jq-front`<<jq-front>> to let users write tests.
 `jq-front` is a tool that allows you to use inheritances and node references (and more) in JSON files.
 
 When it finds a file ends with `.yaml{plus}{plus}`, the tool converts it to a JSON file first and the converted file will have a suffix `.json{plus}{plus}`.
@@ -83,7 +83,8 @@ After this preprocessing step is finished, based on the content of the final JSO
 
 Then, from the files generated during the "run stage", `commandunit` generates a test report.
 
-== Test Script Format
+== Usage
+=== Test Script Format
 
 Following is an example of a test script defined for `commandunit`.
 
@@ -128,7 +129,7 @@ This attribute specifies a template of a test definition.
 You can define your own template and specify it here.
 The built-in templates available are found in the `commandunit` 's repository (https://github.com/dakusui/commandunit/tree/main/src/main/scripts/lib/jsonpp/base[built-in templates]).
 
-=== `when` clause
+==== `when` clause
 
 This attribute defines what will be exercised in a test.
 
@@ -190,7 +191,7 @@ this example will execute a command line: `assert_that HELLO {startsb}{startsb} 
 ----
 ====
 
-=== `then` clause
+==== `then` clause
 
 This attribute defines how the exercised operation is verified.
 
@@ -231,7 +232,13 @@ Following is an example, where nothing should be output to `stdout`.
 ----
 ====
 
-=== Environment Variables
+==== Requirements for "native" mode
+
+The `commandunit` can be used without using Docker.
+
+- `tap`::
+
+==== Environment Variables
 
 Following is the list of built-in environment variables of `commandunit`.
 
@@ -255,14 +262,14 @@ Valid values are `ERROR`, `INFO`, and `DEBUG`.
 A project base directory in the host side's representation, not inside the docker container.
 (example: `/Users/hiroshi.ukai/Documents/github/commandunit-example`).
 
-=== Built-in Library
+==== Built-in Library
 
 The `commandunit` has a set of libraries to make it easy to write tests.
 The source of them can be found here: https://github.com/dakusui/commandunit/tree/main/src/main/scripts/dependencies/bud/lib[Built-in Libraries]
 
 In this section, useful functions for testing will be walked through.
 
-==== bud/core.rc
+===== bud/core.rc
 
 `message`:: prints a message to `stderr`.
 `assert_that`:: tests a given condition (arguments except the first) and aborts if the condition doesn't hold.
@@ -270,13 +277,13 @@ The first argument will be contained in a message it prints.
 `abort`:: aborts the execution. i.e., exits the test's execution with non-zero exit value.
 A stack trace will be printed to `stderr`.
 
-==== bud/logging.rc
+===== bud/logging.rc
 
 `debug`:: prints a message to `stderr` as a `DEBUG` level log message.
 `info`:: prints a message to `stderr` as a `INFO` level log message.
 `error`:: prints a message to `stderr` as a `ERROR` level log message.
 
-==== bud/json.rc
+===== bud/json.rc
 
 `to_json_array`:: prints a JSON array composed of given arguments.
 `json_value_at`:: prints a JSON node specified by a path (second argument) in a given JSON node (first argument) `json_has_key`:: checks if an object node specified by a given path (third argument, default: `.`, which is root) in a given object node (first arguement) has a specified key (second argument).
@@ -291,7 +298,7 @@ If the same key appears, the second overrides the first.
 
 == Default Directory Layout
 
-By default, `commandunit` assumes the compatible directory structure with `maven` based project [<<maven>>].
+By default, `commandunit` assumes the compatible directory structure with `maven` based project <<maven>>.
 
 [source]
 .Default Directory Layout
@@ -383,21 +390,22 @@ image:src/site/docs/resources/images/testreport-example.png[]]
 
 To browse the rendered report, following tools will be useful.
 
-- AsciidocFX[<<asciidocfx>>]
-- Intellij IDEA[<<intellij>>] +  Asciidoc plugin[<<asciidoc-intellij-plugin>>]
+- AsciidocFX<<asciidocfx>>
+- Intellij IDEA<<intellij>> +  Asciidoc plugin<<asciidoc-intellij-plugin>>
 
-In case you need to render it into an html file, you can use a command line tool called `asciidoctor` [<<asciidoc2html>>].
+In case you need to render it into an html file, you can use a command line tool called `asciidoctor` <<asciidoc2html>>.
 
 === Work Directory
 
 Under work directory, `commandunit` generates internal files that usually you are not interested in.
 You can specify the path of the directory by `--test-reportdir`, and its default is `target/commandunit/work`.
 
+[bibliography]
 == References
 
-- [[jq-front, 1]] jq-front project in github.org. https://github.com/dakusui/jq-front[jq-front]: 2019
-- [[maven, 2]] Apache Maven Project https://maven.apache.org/[Apache Maven Project]: 2002-2022
-- [[asciidocfx, 3]] Asciidoc Book Editor based on JavaFX 18 https://asciidocfx.com/[Asciidoc Book Editor based on JavaFX 18]: 2022
-- [[intellij, 4]] IntelliJ IDEA https://www.jetbrains.com/idea/[IntelliJ IDEA]: 2000-2022
-- [[asciidoc-intellij-plugin, 5]] Asciidoctor Intellij Plugin Project https://plugins.jetbrains.com/plugin/7391-asciidoc[Asciidoctor Intellij Plugin Project]: 2022
-- [[asciidoc2html, 6]] Generate HTML from AsciiDoc https://docs.asciidoctor.org/asciidoctor/latest/html-backend/[Generate HTML from AsciiDoc]: 2022
+- [[[jq-front, 1]]] jq-front project in github.org. https://github.com/dakusui/jq-front[jq-front]: 2019
+- [[[maven, 2]]] Apache Maven Project https://maven.apache.org/[Apache Maven Project]: 2002-2022
+- [[[asciidocfx, 3]]] Asciidoc Book Editor based on JavaFX 18 https://asciidocfx.com/[Asciidoc Book Editor based on JavaFX 18]: 2022
+- [[[intellij, 4]]] IntelliJ IDEA https://www.jetbrains.com/idea/[IntelliJ IDEA]: 2000-2022
+- [[[asciidoc-intellij-plugin, 5]]] Asciidoctor Intellij Plugin Project https://plugins.jetbrains.com/plugin/7391-asciidoc[Asciidoctor Intellij Plugin Project]: 2022
+- [[[asciidoc2html, 6]]] Generate HTML from AsciiDoc https://docs.asciidoctor.org/asciidoctor/latest/html-backend/[Generate HTML from AsciiDoc]: 2022

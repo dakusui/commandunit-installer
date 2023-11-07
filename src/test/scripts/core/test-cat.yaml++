@@ -3,7 +3,7 @@
   - core/base.json
 when:
   environmentVariables:
-    SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
+    SCRIPTS_DIR: "${COMMANDUNIT_PROJECT_DIR}/src/main/scripts"
   source:
     - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
     - ${SCRIPTS_DIR}/target_lib.rc
