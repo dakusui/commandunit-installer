@@ -5,7 +5,7 @@ when:
   environmentVariables:
     SCRIPTS_DIR: "${COMMANDUNIT_PROJECT_DIR}/src/main/scripts"
   source:
-    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_BUILTIN_ROOT}/bud/lib/core.rc
     - ${SCRIPTS_DIR}/target_lib.rc
   cmd: cat
   args:
