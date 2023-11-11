@@ -5,7 +5,7 @@ when:
   description:
     - Call 'void_value' function, which should return a value that represents nothing.
   source:
-    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_BUILTIN_ROOT}/bud/lib/core.rc
     - ${COMMANDUNIT_PROJECT_DIR}/src/main/scripts/target_lib.rc
   cmd: void_value
 then:
