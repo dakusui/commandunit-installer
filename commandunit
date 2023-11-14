@@ -1,4 +1,6 @@
-function commandunit() {
+#!/usr/bin/env bash
+
+function __commandunit_exec_commandunit() {
   export PROJECT_BASE_DIR="${PWD}"
   export COMMANDUNIT_PWD="${PROJECT_BASE_DIR}" # Referenced by commandunit itself.
   export COMMANDUNIT_SOURCE_DIR="${PROJECT_BASE_DIR}/src/dependencies/commandunit"
@@ -70,7 +72,7 @@ function commandunit() {
   function __commandunit_exec_commandunit_native() {
     local _version_name="${1}"
     shift
-    "${COMMANDUNIT_SOURCE_DIR}/${_version_name}/src/main/scripts/bin/commandunit" "${@}"
+    "${COMMANDUNIT_SOURCE_DIR}/${_version_name}/src/main/scripts/bin/commandunit-main" "${@}"
   }
 
   local _project_basedir="${PROJECT_BASE_DIR}"
@@ -172,3 +174,9 @@ function commandunit() {
     __commandunit_exec_commandunit_native "${_version_name}" "${_args[@]}"
   fi
 }
+
+function main() {
+  __commandunit_exec_commandunit "${@}"
+}
+
+main "${@}"
