@@ -3,6 +3,10 @@
 set -eu -o pipefail -o errtrace
 shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
+function __install_commandunit__checkenv() {
+  # Check $HOME/bin exists
+  :
+}
 
 function __install_commandunit__test_installed() {
   # Execute the string in local variable _cmd.
@@ -45,6 +49,19 @@ function main() {
 
 # main "${@}"
 
+function test_block_3() {
+  local _out _err
+
+  _err=$(readarray -t _out < <(echo hello && cat notFound 2>&1)) || {
+    local _c=$?
+    echo "ERR: <${_err}>" >&2
+    return $_c
+  }
+  echo "exitCode: $?"
+  echo "ERR: <${_err}>" >&2
+  echo "OUT: <${_out}>" >&2
+}
+
 function test_block() {
   local _err
   _err="$(curl -f https://raw.githubusercontent.com/dakusui/commandunit/wrapper-verified/src/main/scripts/bin/commandunitX -o "${HOME}/bin/commandunit" 2>&1)" || {
@@ -67,4 +84,16 @@ function test_block_2() {
   chmod 755 "${HOME}/bin/commandunit"
 }
 
-test_block_2
+function test_block_3() {
+  local _err _out _cc=0
+  _err=$(_out="$(cat -n $0)" || {
+    local _c=$?
+    echo "ERROR::<${_err}>"
+    return "${_c}"
+  } 2>&1
+  echo "INFO:<$_out>"
+  )
+    echo "${_err}"
+}
+
+test_block_3
