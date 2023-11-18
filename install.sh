@@ -96,4 +96,51 @@ function test_block_3() {
     echo "${_err}"
 }
 
-test_block_3
+function func() {
+  local _varname="${1}"
+  _varname="$(printf '%q' "${_varname}")"
+  echo "_varname=${_varname}"
+  eval "${_varname}=Hello"
+}
+
+function test_block_4() {
+  local _var
+  func _var
+  echo "${_var}"
+  func '$_var'
+}
+
+
+function read_exec() {
+  local _stdout_varname _stderr_varname
+  local _tmpfile_stderr _stdout _stderr _exit_code=0
+  _stdout_varname="$(printf '%q' "${1}")"
+  _stderr_varname="$(printf '%q' "${2}")"
+  shift; shift
+  _tmpfile_stderr="$(mktemp)"
+  _stdout="$("${@}")" 2> "${_tmpfile_stderr}" || {
+    _exit_code=$?
+    echo "path-1" >&2
+  }
+  echo "path-2" >&2
+  echo "path-2:stdout: [${_stdout}]" >&2
+  echo "path-2:stderr: [${_stderr}]" >&2
+  _stdout="$(printf '%q' "${_stdout}")"
+  _stderr="$(printf '%q' "$(cat "${_tmpfile_stderr}")")"
+  echo "path-3" >&2
+
+  echo eval "${_stdout_varname}='${_stdout}'"
+  echo eval "${_stderr_varname}='${_stderr}'"
+  echo "path-4" >&2
+  return "${_exit_code}"
+}
+
+function main() {
+  local _stdout="" _stderr=""
+  read_exec _stdout _stderr cat notFound || {
+    echo "stdout=<${_stdout}>"
+    echo "stderr=<${_stderr}>"
+  }
+}
+
+main
