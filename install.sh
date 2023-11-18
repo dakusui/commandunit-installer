@@ -34,6 +34,7 @@ function read_std() {
 
 function __install_commandunit__clean_installation_reportdir() {
   local _installation_reportdir="${1}"
+  echo "Removing ${_installation_reportdir}" >&2
   rm -fr "${_installation_reportdir:?}"
 }
 
@@ -44,7 +45,6 @@ function __install_commandunit__perform_checks() {
   shift
   shift
   mkdir -p "${_session_dir}"
-  echo "PERFORMING: ${_session_name^^}..." >&2
   for _i in "${@}"; do
     read_std _stdout _stderr "${_i}" || {
       echo "${_stdout}" > "${_session_dir}/${_i}.stdout"
@@ -158,13 +158,40 @@ function main() {
   local _appname="commandunit"
   local _dest="${_dest_dir}/${_appname}"
   local _installation_reportdir="target/commandunit/install"
-  __install_commandunit__clean_installation_reportdir "${_installation_reportdir}"
-  __install_commandunit__checkenv "${_dest_dir}"  "${_installation_reportdir}"
-  __install_commandunit__download_commandunit "${_url}" "${_dest}"
-  __install_commandunit__checkinstallation "${_dest}" "${_appname}" "${_installation_reportdir}"
+  function clean() {
+    __install_commandunit__clean_installation_reportdir "${_installation_reportdir}"
+  }
+  function precheck() {
+    __install_commandunit__checkenv "${_dest_dir}"  "${_installation_reportdir}"
+  }
+  function install() {
+    __install_commandunit__download_commandunit "${_url}" "${_dest}"
+  }
+  function postcheck() {
+    __install_commandunit__checkinstallation "${_dest}" "${_appname}" "${_installation_reportdir}"
+  }
+  if [[ ${#} == 0 ]]; then
+    return 0
+  fi
+  local _stage="${1}"
+  shift
+  if [[ "clean precheck install postcheck" != *"${_stage}"* ]]; then
+    echo "Unknown subcommand: '${_stage}' was given."
+    return 1
+  fi
+  "${_stage}" 2|& sed -E 's/(.*)/'"$(printf '%-10s' "${_stage}:")"'\1/' >&2 || {
+    local _exit_code="$?"
+    echo "ERROR!" "${_stage^^}" >&2
+    return "${_exit_code}"
+  }
+  main "${@}"
 }
 
-main "${@}" || {
+if [[ ${#} == 0 ]]; then
+  main clean precheck install postcheck
+else
+  main "${@}"
+fi || {
   echo "INSTALLATION FAILED!"
   exit 1
 }

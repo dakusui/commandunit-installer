@@ -1,6 +1,6 @@
 :toc:
 
-= About this repository
+= README: About this repository
 
 This repository provides an installer of `commandunit` tool.
 Also, this contains an example project to illustrate how to use `commanduunit` (https://github.com/dakusui/commandunit[github]) and how to organize a shell script based project using it.
@@ -12,6 +12,7 @@ To install it, just run:
 ./install.sh
 ----
 
+For more detail of installation, check <<installation>> section.
 
 To just run tests under `src/main/scripts`, type the following command from your terminal:
 
@@ -69,17 +70,17 @@ ERROR:(exit code:1, pipe status: 1):
 One and only one test in the example test suite should fail and the command should exit with `1`.
 Don't worry, the one (`core/test-cat-failing.json`) is designed to fail intentionally in order to illustrate how a test report looks like.
 
+[[installation]]
 == Installation of `commandunit`
 
 To try the from your command line, do:
 
 ----
-. build.sh
+./install.sh
 ----
 
-This will define a bash function whose name is `commandunit` which you can run from your terminal.
-In other words, you can use the tool in your project just by copy the definition of the function to your build script.
-As long as you have `docker` command available.
+This will download a "wrapper" script and place it under your `$HOME/bin` directory.
+You need to have the directory in your `PATH` environment variable.
 
 == Design of `commandunit`
 
@@ -99,48 +100,47 @@ Then, from the files generated during the "run stage", `commandunit` generates a
 === Test Script Format
 
 Following is an example of a test script defined for `commandunit`.
+You can find a file in `src/test/scripts/core` directory.
 
 [source,yaml]
-.Example
+.Example: `scripts/core/test-cat-yaml.yaml++`
 ----
 ---
 "$extends":
-  - base/normal.json
-when:
-  description:
-    - Call 'abort' function define in core.rc.
-    - This test is to illustrate the usage of the function.
+  - core/base-yaml.yaml <1>
+when: <2>
   environmentVariables:
-    SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
+    SCRIPTS_DIR: "${COMMANDUNIT_PROJECT_DIR}/src/main/scripts"
   source:
-    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
-    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
-  cmd: assert_that
+    - ${COMMANDUNIT_BUILTIN_ROOT}/bud/lib/core.rc
+    - ${SCRIPTS_DIR}/target_lib.rc
+  cmd: cat
   args:
-    - "[["
-    - hello
-    - ==
-    - Hello
-    - "]]"
+    - ${SCRIPTS_DIR}/hello.txt
 then:
   exitCode:
-    - NOT_EQUAL
+    - EQUAL
     - 0
   stdout:
+    present:
+      - REGEX:Hello world
+  stderr:
     absent:
       - REGEX:.+
-  stderr:
-    present:
-      - REGEX:Condition.*HELLO
-      - REGEX:Detail.*hello.*Hello
 ----
+<1> Check <<extends_attribute>>
+<2> Check <<when_clause>>
 
-`"$extends"`::
-This attribute specifies a template of a test definition.
-`base/normal.json` is a built-in template.
-You can define your own template and specify it here.
+[[extends_attribute]]
+==== `$extends` attribute
+This attribute specifies a list of  yaml{plus}{plus}, json++, or json files that this file inherits.
+In this example, it is specified that a file `core/base-yaml.yaml`.
+The file is stored as `src/test/.commandunit/jsonpp/core/base-yaml.yaml`.
+The file then extends `base/normal.json`, which is a built-in file, in the ends.
+When you use `$extends` attribute, the file in the array will be searched from `src/test/.commandunit` and built-in directory.
 The built-in templates available are found in the `commandunit` 's repository (https://github.com/dakusui/commandunit/tree/main/src/main/scripts/lib/jsonpp/base[built-in templates]).
 
+[[when_clause]]
 ==== `when` clause
 
 This attribute defines what will be exercised in a test.
@@ -446,6 +446,7 @@ INSTALLATION SUCCEEDED
 If the installation fails, please include the installer's output in your ticket.
 Also, please attach an archive that contains files under `target/commandunit/install` (`tar cvzf install-report.tar.gz target/commandunit/install`).
 
+To report a problem in the installer, please visit link:https://github.com/dakusui/commandunit-installer/issues[here].
 
 [bibliography]
 == References
