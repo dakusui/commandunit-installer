@@ -107,7 +107,6 @@ function test_block_4() {
   local _var
   func _var
   echo "${_var}"
-  func '$_var'
 }
 
 
@@ -124,23 +123,24 @@ function read_exec() {
   }
   echo "path-2" >&2
   echo "path-2:stdout: [${_stdout}]" >&2
-  echo "path-2:stderr: [${_stderr}]" >&2
+#  echo "path-2:stderr: [${_stderr}]" >&2
   _stdout="$(printf '%q' "${_stdout}")"
   _stderr="$(printf '%q' "$(cat "${_tmpfile_stderr}")")"
   echo "path-3" >&2
 
-  echo eval "${_stdout_varname}='${_stdout}'"
-  echo eval "${_stderr_varname}='${_stderr}'"
+  eval "${_stdout_varname}='${_stdout}'"
+  eval "${_stderr_varname}='${_stderr}'"
   echo "path-4" >&2
   return "${_exit_code}"
 }
 
 function main() {
   local _stdout="" _stderr=""
-  read_exec _stdout _stderr cat notFound || {
-    echo "stdout=<${_stdout}>"
-    echo "stderr=<${_stderr}>"
+  read_exec _stdout _stderr echo HelloHello || {
+    :
   }
+  echo "stdout=<${_stdout}>"
+  echo "stderr=<${_stderr}>"
 }
 
-main
+test_block_4
