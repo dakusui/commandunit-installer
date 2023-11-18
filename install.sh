@@ -164,4 +164,8 @@ function main() {
   __install_commandunit__checkinstallation "${_dest}" "${_appname}" "${_installation_reportdir}"
 }
 
-main "${@}"
+main "${@}" || {
+  echo "INSTALLATION FAILED!"
+  exit 1
+}
+echo "INSTALLATION SUCCEEDED"

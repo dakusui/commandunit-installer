@@ -2,13 +2,25 @@
 
 = About this repository
 
-This repository is an example project to illustrate how to use `commanduunit` (https://github.com/dakusui/commandunit[github]) and how to organize a shell script based project using it.
+This repository provides an installer of `commandunit` tool.
+Also, this contains an example project to illustrate how to use `commanduunit` (https://github.com/dakusui/commandunit[github]) and how to organize a shell script based project using it.
+
+To install it, just run:
+
+[source, bash]
+----
+./install.sh
+----
+
 
 To just run tests under `src/main/scripts`, type the following command from your terminal:
 
+[source, bash]
 ----
-./build.sh
+commandunit --clean <1>
 ----
+<1> `commandunit` generates intermediate files and this is sometimes time-consuming if you have a lot of tests.
+You can reuse already generated files by default. `--clean` cleans up them.
 
 Note that you need a docker CLI installed, and docker daemon running.
 Also, we tested this repository with `bash 5.1` (Ubuntu 22.04).
@@ -398,7 +410,42 @@ In case you need to render it into an html file, you can use a command line tool
 === Work Directory
 
 Under work directory, `commandunit` generates internal files that usually you are not interested in.
-You can specify the path of the directory by `--test-reportdir`, and its default is `target/commandunit/work`.
+You can specify the path of the directory by `--test-workdir`, and its default is `target/commandunit/work`.
+
+== Troubleshooting
+
+The installer (`install.sh`) gives output like following:
+
+[source, shell]
+----
+$ ./install.sh
+PERFORMING: PRE-CHECK...
+pass: <is_HOME_bin_in_PATH>
+pass: <does_HOME_bin_exists>
+-----
+FAILED CHECKS: 0
+INSTALLING commandunit...
+DONE
+PERFORMING: POST-CHECK...
+pass: <installed_executable_is_found_by_which_command>
+pass: <docker_execution_exits_with_non_zero>
+pass: <failed_test_in_tap_report_is_one>
+pass: <testreport_json_exists>
+pass: <testreport_adoc_exists>
+pass: <testreport_json_num_failed_is_1>
+pass: <native_execution_exits_with_non_zero>
+pass: <failed_test_in_tap_report_is_one>
+pass: <testreport_json_exists>
+pass: <testreport_adoc_exists>
+pass: <testreport_json_num_failed_is_1>
+-----
+FAILED CHECKS: 0
+INSTALLATION SUCCEEDED
+----
+
+If the installation fails, please include the installer's output in your ticket.
+Also, please attach an archive that contains files under `target/commandunit/install` (`tar cvzf install-report.tar.gz target/commandunit/install`).
+
 
 [bibliography]
 == References
