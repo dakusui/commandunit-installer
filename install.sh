@@ -3,29 +3,134 @@
 set -eu -o pipefail -o errtrace
 shopt -s inherit_errexit nullglob compat"${BASH_COMPAT=42}"
 
+# Reads standard streams (stdout and stderr) and assign the content of them to variables specified by the first and
+# second parameters respectively.
+# Note that this function doesn't declare variables specified by the parameters.
+# They need to be defined in the caller side if necessary.
+# Also note that the behavior is undefined, when a variable name which starts with `__read_std_` is specified.
+# 1:  A variable name to which stdout from the parameter 3- will be assigned.
+# 2:  A variable name to which stderr from the parameter 3- will be assigned.
+# 3-: A command line to be executed by this function.
+function read_std() {
+  local __read_std_stdout_varname __read_std_stderr_varname
+  local __read_std_tmpfile_stderr __read_std_stdout_content __read_std_stderr_content __read_std_exit_code=0
+  __read_std_stdout_varname="$(printf '%q' "${1}")"
+  __read_std_stderr_varname="$(printf '%q' "${2}")"
+  shift; shift
+  __read_std_tmpfile_stderr="$(mktemp)"
+  __read_std_stdout_content="$("${@}" 2> "${__read_std_tmpfile_stderr}")" || {
+    __read_std_exit_code=$?
+  }
+  __read_std_stdout_content="$(printf '%q' "${__read_std_stdout_content}")"
+  __read_std_stderr_content="$(cat "${__read_std_tmpfile_stderr}")"
+  __read_std_stderr_content="$(printf '%q' "${__read_std_stderr_content}")"
+
+  eval "${__read_std_stdout_varname}=${__read_std_stdout_content}"
+  eval "${__read_std_stderr_varname}=${__read_std_stderr_content}"
+
+  rm -f "${__read_std_tmpfile_stderr}"
+  return "${__read_std_exit_code}"
+}
+
+function __install_commandunit__clean_installation_reportdir() {
+  local _installation_reportdir="${1}"
+  rm -fr "${_installation_reportdir:?}"
+}
+
+function __install_commandunit__perform_checks() {
+  local _installation_reportdir="${1}" _session_name="${2}"
+  local _failed=0
+  local _stdout _stderr _session_dir="${1}/${_session_name}"
+  shift
+  shift
+  mkdir -p "${_session_dir}"
+  echo "PERFORMING: ${_session_name^^}..." >&2
+  for _i in "${@}"; do
+    read_std _stdout _stderr "${_i}" || {
+      echo "${_stdout}" > "${_session_dir}/${_i}.stdout"
+      echo "${_stderr}" > "${_session_dir}/${_i}.stderr"
+      echo "FAIL: <${_i}>" >&2
+      _failed=$((_failed + 1))
+      continue
+    }
+    echo "pass: <${_i}>" >&2
+  done
+  echo "----"
+  echo "FAILED CHECKS: ${_failed}" >&2
+  [[ 0 == "${_failed}" ]] || return 1
+}
+
 function __install_commandunit__checkenv() {
+  local _dest_dir="${1}" _installation_reportdir="${2}"
+  # Check $HOME/bin is in PATH environment variable.
+  function is_HOME_bin_in_PATH() {
+    [[ "${PATH}" == *"${_dest_dir}"* ]] || return 1
+  }
   # Check $HOME/bin exists
-  :
+  function does_HOME_bin_exists() {
+    [[ -d "${_dest_dir}" ]] || return 1
+  }
+  __install_commandunit__perform_checks "${_installation_reportdir}" "pre-check" is_HOME_bin_in_PATH does_HOME_bin_exists
 }
 
-function __install_commandunit__test_installed() {
-  # Execute the string in local variable _cmd.
-  # shellcheck disable=SC2090
-  echo "Executing: ${_cmd}" >&2
+
+
+function __install_commandunit__checkinstallation() {
+  local _dest="${1}" _appname="${2}" _installation_reportdir="${3}"
+  local _filestem_testreport="target/commandunit/report/testreport"
+  local _file_testreport_adoc="${_filestem_testreport}.adoc"
+  local _file_testreport_json="${_filestem_testreport}.json"
+  function installed_executable_is_found_by_which_command() {
+    local _which
+    _which="$(which "${_appname}")"
+    [[ "${_which}" == "${_dest}" ]] || return 1
+  }
+  function docker_execution_exits_with_non_zero() {
+    # Notice, the caller "__install_commandunit__perform_checks" function defines _stderr and _stdout local variables,
+    # which are visible to this function.
+    _stdout=""
+    _stderr=""
+    command commandunit --clean || return 0
+  }
+  function native_execution_exits_with_non_zero() {
+    # Notice, the caller "__install_commandunit__perform_checks" function defines _stderr and _stdout local variables,
+    # which are visible to this function.
+    _stdout=""
+    _stderr=""
+    command commandunit --native --clean || return 0
+  }
+  function failed_test_in_tap_report_is_one() {
+    local _num_failed
+    _num_failed="$(echo "${_stdout}" | grep -c 'not ok')"
+    [[ ${_num_failed} == 1 ]] || return 1
+  }
+  function testreport_json_exists() {
+    [[ -f "${_file_testreport_json}" ]] || return 1
+  }
+  function testreport_adoc_exists() {
+    [[ -f "${_file_testreport_adoc}" ]] || return 1
+  }
+  function testreport_json_num_failed_is_1 {
+    local _num_failed
+    _num_failed="$(jq .report.summary.failed "${_file_testreport_json}")"
+    [[ "${_num_failed}" == 1 ]] || return 1
+  }
+  __install_commandunit__perform_checks "${_installation_reportdir}" "post-check" installed_executable_is_found_by_which_command \
+    docker_execution_exits_with_non_zero failed_test_in_tap_report_is_one testreport_json_exists testreport_adoc_exists testreport_json_num_failed_is_1 \
+    native_execution_exits_with_non_zero failed_test_in_tap_report_is_one testreport_json_exists testreport_adoc_exists testreport_json_num_failed_is_1
 }
 
-function __install_commandunit__execute_commandunit() {
-  # Execute the string in local variable _cmd.
-  # shellcheck disable=SC2090
-  echo "Executing: ${_cmd}" >&2
-}
-
-function __download_commandunit() {
-  curl -f https://raw.githubusercontent.com/dakusui/commandunit/wrapper-verified/src/main/scripts/bin/commandunit -o "${HOME}/bin/commandunit" 2>&1 || {
-    local _err="${?}"
-    message
+function __install_commandunit__download_commandunit() {
+  local _stdout _stderr
+  local _url="${1}"
+  local _dest="${2}"
+  echo "INSTALLING commandunit..." >&2
+  read_std _stdout _stderr curl -f "${_url}" -o "${_dest}" || {
+    printf 'Failed to download commandunit:\n  url: "%s"\n  dest: "%s"\n  stdout: "%s"\n  stderr: "%s"\n' "${_url}" "${_dest}" "${_stdout}" "${_stderr}">&2
     return "${_err}"
   }
+  echo "DONE" >&2
+  chmod 755 "${_dest}"
 }
 
 function main() {
@@ -47,100 +152,16 @@ function main() {
   echo "Also, by doing 'sudo mv $(pwd)/commandunit /usr/local/bin/commandunit', you will not need to specify the directory every time." >&2
 }
 
-# main "${@}"
-
-function test_block_3() {
-  local _out _err
-
-  _err=$(readarray -t _out < <(echo hello && cat notFound 2>&1)) || {
-    local _c=$?
-    echo "ERR: <${_err}>" >&2
-    return $_c
-  }
-  echo "exitCode: $?"
-  echo "ERR: <${_err}>" >&2
-  echo "OUT: <${_out}>" >&2
-}
-
-function test_block() {
-  local _err
-  _err="$(curl -f https://raw.githubusercontent.com/dakusui/commandunit/wrapper-verified/src/main/scripts/bin/commandunitX -o "${HOME}/bin/commandunit" 2>&1)" || {
-    local _c=$?
-    echo "ERROR::<${_err}"
-    return "${_c}"
-  }
-  echo "INFO"
-  chmod 755 "${HOME}/bin/commandunit"
-}
-
-function test_block_2() {
-  local _err _out _cc=0
-  _err="$(curl -f https://raw.githubusercontent.com/dakusui/commandunit/wrapper-verified/src/main/scripts/bin/commandunitX -o "${HOME}/bin/commandunit" 2>&1)" || {
-    local _c=$?
-    echo "ERROR::<${_err}"
-    return "${_c}"
-  }
-  echo "INFO:<$_out>"
-  chmod 755 "${HOME}/bin/commandunit"
-}
-
-function test_block_3() {
-  local _err _out _cc=0
-  _err=$(_out="$(cat -n $0)" || {
-    local _c=$?
-    echo "ERROR::<${_err}>"
-    return "${_c}"
-  } 2>&1
-  echo "INFO:<$_out>"
-  )
-    echo "${_err}"
-}
-
-function func() {
-  local _varname="${1}"
-  _varname="$(printf '%q' "${_varname}")"
-  echo "_varname=${_varname}"
-  eval "${_varname}=Hello"
-}
-
-function test_block_4() {
-  local _var
-  func _var
-  echo "${_var}"
-}
-
-
-function read_exec() {
-  local _stdout_varname _stderr_varname
-  local _tmpfile_stderr _stdout _stderr _exit_code=0
-  _stdout_varname="$(printf '%q' "${1}")"
-  _stderr_varname="$(printf '%q' "${2}")"
-  shift; shift
-  _tmpfile_stderr="$(mktemp)"
-  _stdout="$("${@}")" 2> "${_tmpfile_stderr}" || {
-    _exit_code=$?
-    echo "path-1" >&2
-  }
-  echo "path-2" >&2
-  echo "path-2:stdout: [${_stdout}]" >&2
-#  echo "path-2:stderr: [${_stderr}]" >&2
-  _stdout="$(printf '%q' "${_stdout}")"
-  _stderr="$(printf '%q' "$(cat "${_tmpfile_stderr}")")"
-  echo "path-3" >&2
-
-  eval "${_stdout_varname}='${_stdout}'"
-  eval "${_stderr_varname}='${_stderr}'"
-  echo "path-4" >&2
-  return "${_exit_code}"
-}
-
 function main() {
-  local _stdout="" _stderr=""
-  read_exec _stdout _stderr echo HelloHello || {
-    :
-  }
-  echo "stdout=<${_stdout}>"
-  echo "stderr=<${_stderr}>"
+  local _url="https://raw.githubusercontent.com/dakusui/commandunit/wrapper-verified/src/main/scripts/bin/commandunit"
+  local _dest_dir="${HOME}/bin"
+  local _appname="commandunit"
+  local _dest="${_dest_dir}/${_appname}"
+  local _installation_reportdir="target/commandunit/install"
+  __install_commandunit__clean_installation_reportdir "${_installation_reportdir}"
+  __install_commandunit__checkenv "${_dest_dir}"  "${_installation_reportdir}"
+  __install_commandunit__download_commandunit "${_url}" "${_dest}"
+  __install_commandunit__checkinstallation "${_dest}" "${_appname}" "${_installation_reportdir}"
 }
 
-test_block_4
+main "${@}"
