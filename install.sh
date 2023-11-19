@@ -86,6 +86,12 @@ function __install_commandunit__checkenv() {
   function does_HOME_bin_exists() {
     [[ -d "${_dest_dir}" ]] || return 1
   }
+  function is_gnused_installed() {
+    which sed
+    local _o _e
+    read_std_thru _o _e sed --version
+    echo "${_o}" | grep 'GNU sed'
+  }
   function is_yaml2json_installed() {
     which yaml2json
   }
@@ -116,7 +122,8 @@ function __install_commandunit__checkenv() {
   __install_commandunit__perform_checks \
     "${_installation_reportdir}" \
     "pre-check" \
-    is_HOME_bin_in_PATH does_HOME_bin_exists is_yaml2json_installed is_jq_installed \
+    is_HOME_bin_in_PATH does_HOME_bin_exists \
+    is_gnused_installed is_yaml2json_installed is_jq_installed \
     is_docker_installed docker_run_helloworld_works docker_run_mktemp_works \
     is_bash_installed is_bash_modern_enough
 }
