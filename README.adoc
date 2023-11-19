@@ -1,14 +1,27 @@
 :toc:
 
-= About this repository
+= README: About this repository
 
-This repository is an example project to illustrate how to use `commanduunit` (https://github.com/dakusui/commandunit[github]) and how to organize a shell script based project using it.
+This repository provides an installer of `commandunit` tool.
+Also, this contains an example project to illustrate how to use `commanduunit` (https://github.com/dakusui/commandunit[github]) and how to organize a shell script based project using it.
+
+To install it, just run:
+
+[source, bash]
+----
+./install.sh
+----
+
+For more detail of installation, check <<installation>> section.
 
 To just run tests under `src/main/scripts`, type the following command from your terminal:
 
+[source, bash]
 ----
-./build.sh
+commandunit --clean <1>
 ----
+<1> `commandunit` generates intermediate files and this is sometimes time-consuming if you have a lot of tests.
+You can reuse already generated files by default. `--clean` cleans up them.
 
 Note that you need a docker CLI installed, and docker daemon running.
 Also, we tested this repository with `bash 5.1` (Ubuntu 22.04).
@@ -57,78 +70,97 @@ ERROR:(exit code:1, pipe status: 1):
 One and only one test in the example test suite should fail and the command should exit with `1`.
 Don't worry, the one (`core/test-cat-failing.json`) is designed to fail intentionally in order to illustrate how a test report looks like.
 
+[[installation]]
 == Installation of `commandunit`
 
 To try the from your command line, do:
 
 ----
-. build.sh
+./install.sh
 ----
 
-This will define a bash function whose name is `commandunit` which you can run from your terminal.
-In other words, you can use the tool in your project just by copy the definition of the function to your build script.
-As long as you have `docker` command available.
+This will download a "wrapper" script and place it under your `$HOME/bin` directory.
+You need to have the directory in your `PATH` environment variable.
 
-== Design of `commandunit`
-
-The `commandunit` uses `jq-front`<<jq-front>> to let users write tests.
-`jq-front` is a tool that allows you to use inheritances and node references (and more) in JSON files.
-
-When it finds a file ends with `.yaml{plus}{plus}`, the tool converts it to a JSON file first and the converted file will have a suffix `.json{plus}{plus}`.
-Then the `.json{plus}{plus}` files will be converted into '.json' file using `jq-front`.
-(preprocess stage) So, familiarizing yourself with `jq-front` 's syntax will be very useful.
-
-After this preprocessing step is finished, based on the content of the final JSON files, which should contain full-information to execute a test case, `commandunit` executes the test case.
-(run stage)
-
-Then, from the files generated during the "run stage", `commandunit` generates a test report.
 
 == Usage
+
+=== Command Line
+
+`commandunit` has "native" and normal (docker) execution modes.
+The "native" mode uses command line tools installed on your system to execute `commandunit` 's functionality, while normal mode uses a docker image which contains all the necessary dependencies.
+The default is the "normal" mode.
+To use "native" mode, give `--native` option to `commandunit`.
+
+."native" mode
+----
+commandunit --native
+----
+
+`commandunit` generates intermediate files to accelerate its execution.
+Those intermediate files will be reused if source test files are not updated by default.
+However, this mechanism will get confused in case the files are generated for "native" mode but reused by normal mode or vice versa.
+To remove those internal files, use `--clean` option.
+
+.`--clean` option
+----
+commandunit --clean
+----
+
+To show the help, use `--help` option.
+
+.Help
+----
+commandunit --help
+----
+
+Also, check https://dakusui.github.io/commandunit/handbookCommandLine.html[Command Line Interface Handbook] for more detail.
+
+
 === Test Script Format
 
 Following is an example of a test script defined for `commandunit`.
+You can find a file in `src/test/scripts/core` directory.
 
 [source,yaml]
-.Example
+.Example: `scripts/core/test-cat-yaml.yaml++`
 ----
 ---
 "$extends":
-  - base/normal.json
-when:
-  description:
-    - Call 'abort' function define in core.rc.
-    - This test is to illustrate the usage of the function.
+  - core/base-yaml.yaml <1>
+when: <2>
   environmentVariables:
-    SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
+    SCRIPTS_DIR: "${COMMANDUNIT_PROJECT_DIR}/src/main/scripts"
   source:
-    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
-    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
-  cmd: assert_that
+    - ${COMMANDUNIT_BUILTIN_ROOT}/bud/lib/core.rc
+    - ${SCRIPTS_DIR}/target_lib.rc
+  cmd: cat
   args:
-    - "[["
-    - hello
-    - ==
-    - Hello
-    - "]]"
+    - ${SCRIPTS_DIR}/hello.txt
 then:
   exitCode:
-    - NOT_EQUAL
+    - EQUAL
     - 0
   stdout:
+    present:
+      - REGEX:Hello world
+  stderr:
     absent:
       - REGEX:.+
-  stderr:
-    present:
-      - REGEX:Condition.*HELLO
-      - REGEX:Detail.*hello.*Hello
 ----
+<1> Check <<extends_attribute>>
+<2> Check <<when_clause>>
 
-`"$extends"`::
-This attribute specifies a template of a test definition.
-`base/normal.json` is a built-in template.
-You can define your own template and specify it here.
+[[extends_attribute]]
+==== `$extends` attribute
+This attribute specifies a list of  yaml{plus}{plus}, json++, or json files that this file inherits.
+In this example, it is specified that a file `core/base-yaml.yaml`.
+The file is stored as `src/test/.commandunit/jsonpp/core/base-yaml.yaml`.
+The file then extends `base/normal.json`, which is a built-in file, in the ends.
+When you use `$extends` attribute, the file in the array will be searched from `src/test/.commandunit` and built-in directory.
 The built-in templates available are found in the `commandunit` 's repository (https://github.com/dakusui/commandunit/tree/main/src/main/scripts/lib/jsonpp/base[built-in templates]).
 
+[[when_clause]]
 ==== `when` clause
 
 This attribute defines what will be exercised in a test.
@@ -138,46 +170,37 @@ You can describe the operation to be verified in this test.
 This attribute is currently a placce-holder and not used by the `commandunit`.
 It may be a part of `testreport.adoc` in future, though.
 
-====
 [source,yaml]
 ----
   description:
     - Call 'abort' function define in core.rc.
     - This test is to illustrate the usage of the function.
 ----
-====
 
 `environmentVariables`:: An object.
 You can store key-value pair whose key is a name of an environment variable.
 The following example defines an environment variable `SCRITPS_DIR` and it will be available from the command defined by `cmd` and `args`.
-
-====
 [source,yaml]
 ----
   environmentVariables:
     SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
 ----
-====
 
 `source`:: An array you can list files to be sourced before the command (`cmd`) is executed.
-
-====
 [source,yaml]
 ----
   source:
-    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
-    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
+    - ${COMMANDUNIT_BUILTIN_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_PROJECT_DIR}/src/main/scripts/target_lib.rc
 ----
-====
+In this example, a built-in library `core.rc` and a library under test `target_lib.rc` are sourced.
+Functions defined in those files can be executed from the `cmd` attribute.
 
 `cmd`(a string) and `args`(an array of strings)::
 A command (or more generally an "executable", such as a function) to be executed and arguments to be passed to the command.
 The following example executes a function, which is defined in `bud/core.rc`.
 this example will execute a command line: `assert_that HELLO {startsb}{startsb} hello == Hello {endsb}{endsb}`
-
 .`cmd` and `args` example
-
-====
 [source,yaml]
 ----
   cmd: assert_that
@@ -189,7 +212,6 @@ this example will execute a command line: `assert_that HELLO {startsb}{startsb} 
     - Hello
     - "]]"
 ----
-====
 
 ==== `then` clause
 
@@ -204,14 +226,13 @@ Currently available predicate factory names are following:
 - `EQUAL`
 - `NOT_EQUAL`
 
-====
 [source,yaml]
 ----
-  exitCode:
+  # noinspection YAMLIncompatibleTypes
+exitCode:
     - NOT_EQUAL
     - 0
 ----
-====
 
 `stdout` and `stderr`:: An object.
 You can describe the expectation for `stdout` and `stderr` of `cmd` in `when` clause.
@@ -223,49 +244,30 @@ If a matching line for a pattern in `present` attribute is find in the target st
 If and only if all the conditions defined for `present` are satisfied, the target stream will be considered "pass" for `present`.
 For `absent`, if and only if none of the conditions defined for it are satisfied, the tatarget stream will be considered "pass".
 Following is an example, where nothing should be output to `stdout`.
-====
+
+
 [source,yaml]
 ----
   stdout:
     absent:
       - REGEX:.+
 ----
-====
 
-==== Requirements for "native" mode
+==== Built-in Environment Variables
 
-The `commandunit` can be used without using Docker.
+Following is a list of built-in environment variables of `commandunit`.
 
-- `tap`::
+COMMANDUNIT_PROJECT_DIR:: The top level directory of you project.
+The actual value can be different depending on whether you are using `commandunit` in "native" mode or not.
+COMMANDUNIT_BUILTIN_ROOT:: The directory under which built-ins are stored.
+It points a directory under `+{commandunit-home}+/src/main/scripts/lib`.
 
-==== Environment Variables
-
-Following is the list of built-in environment variables of `commandunit`.
-
-`COMMANDUNIT_DEPENDENCIES_ROOT`::
-A directory which stores built-in dependencies of `commandunit`.
-(example: `/app/dependencies`).
-`COMMANDUNIT_DIR`::
-A directory which stores the project configuration.
-(example: `/var/lib/commandunit/Users/hiroshi.ukai/Documents/github/commandunit-example/src/test/.commandunit`).
-`COMMANDUNIT_HOME`:: (internal)A home directory of the `commandunit`.
-(example: `/app`).
-`COMMANDUNIT_HOSTFSROOT_MOUNTPOINT`::
-A directory at which host side's root directory.
-(example: `/var/lib/commandunit`).
-`COMMANDUNIT_INDOCKER`:: An environment to check if this `commandunit` is executed as a docker container or not.
-(example: `true`).
-`COMMANDUNIT_LOGLEVEL`:: An environment variable to control the loglevel.
-Valid values are `ERROR`, `INFO`, and `DEBUG`.
-(example: `ERROR`).
-`COMMANDUNIT_PWD`::
-A project base directory in the host side's representation, not inside the docker container.
-(example: `/Users/hiroshi.ukai/Documents/github/commandunit-example`).
+For more details, check link:https://dakusui.github.io/commandunit/handbookProgramming.html#_built_ins[Built-ins].
 
 ==== Built-in Library
 
 The `commandunit` has a set of libraries to make it easy to write tests.
-The source of them can be found here: https://github.com/dakusui/commandunit/tree/main/src/main/scripts/dependencies/bud/lib[Built-in Libraries]
+The details of them can be found here: link:https://dakusui.github.io/commandunit/handbookProgramming.html#_built_ins[Built-ins]
 
 In this section, useful functions for testing will be walked through.
 
@@ -296,9 +298,9 @@ An error will be reported if it is not a malformed JSON string.
 If the same key appears, the second overrides the first.
 `json_array_append`:: prints a JSON array by appending an array (second argument) to the other (first argument).
 
-== Default Directory Layout
+=== Default Directory Layout
 
-By default, `commandunit` assumes the compatible directory structure with `maven` based project <<maven>>.
+By default, `commandunit` assumes the compatible directory structure with `maven` based project<<maven>>.
 
 [source]
 .Default Directory Layout
@@ -327,7 +329,10 @@ target/
 <4> A directory to which `commandunit` stores processed test scripts.
 (work directory)
 
-=== Test Script Directory and Test Project Configuration Directory
+You can change the directory layout through `commandunit` 's options.
+Check the link:https://dakusui.github.io/commandunit/[documentation.]
+
+==== Test Script Directory and Test Project Configuration Directory
 
 By default, `./src/test` is considered a directory that stores your test scripts.
 You can specify it by `--test-srcdir` option of the `commandunit`.
@@ -342,7 +347,10 @@ src/
 
 Right under the test script directory, you can place a test project configuration directory.
 
-=== Files in Report Directory
+A directory named `.jsonpp` directory under test project configuration directory will be added to `JF_PATH` environment variable.
+So that you can reference a file under it from `$extends` attribute.
+
+==== Files in Report Directory
 
 Following is the content of "report directory" after `commandunit` execution.
 You can specify a report directory by `--test-reportdir` option of commandunit and its default is `target/commandunit/report`.
@@ -395,10 +403,68 @@ To browse the rendered report, following tools will be useful.
 
 In case you need to render it into an html file, you can use a command line tool called `asciidoctor` <<asciidoc2html>>.
 
-=== Work Directory
+==== Work Directory
 
 Under work directory, `commandunit` generates internal files that usually you are not interested in.
-You can specify the path of the directory by `--test-reportdir`, and its default is `target/commandunit/work`.
+You can specify the path of the directory by `--test-workdir`, and its default is `target/commandunit/work`.
+
+== Design of `commandunit`
+
+The `commandunit` uses `jq-front`<<jq-front>> to let users write tests.
+`jq-front` is a tool that allows you to use inheritances and node references (and more) in JSON files.
+
+When it finds a file ends with `.yaml{plus}{plus}`, the tool converts it to a JSON file first and the converted file will have a suffix `.json{plus}{plus}`.
+Then the `.json{plus}{plus}` files will be converted into '.json' file using `jq-front`.
+(preprocess stage) So, familiarizing yourself with `jq-front` 's syntax will be very useful.
+
+After this preprocessing step is finished, based on the content of the final JSON files, which should contain full-information to execute a test case, `commandunit` executes the test case.
+(run stage)
+
+Then, from the files generated during the "run stage", `commandunit` generates a test report.
+
+Check link:https://dakusui.github.io/commandunit/designConcept.html[Design Concept] and link:https://dakusui.github.io/commandunit/designDetail.html[Design Detail] pages of `commandunit` for more detail.
+
+== Installation Troubleshooting
+
+The installer (`install.sh`) gives output like following:
+
+[source, shell]
+----
+$ ./install.sh
+clean:    Removing target/commandunit/install
+precheck: pass: <is_HOME_bin_in_PATH>
+precheck: pass: <does_HOME_bin_exists>
+precheck: pass: <is_yaml2json_installed>
+precheck: pass: <is_jq_installed>
+precheck: pass: <is_docker_installed>
+precheck: pass: <docker_run_helloworld_works>
+precheck: pass: <docker_run_mktemp_works>
+precheck: pass: <is_bash_installed>
+precheck: pass: <is_bash_modern_enough>
+precheck: ----
+precheck: FAILED CHECKS: 0
+install:  INSTALLING commandunit...
+install:  DONE
+postcheck:pass: <installed_executable_is_found_by_which_command>
+postcheck:pass: <docker_execution_exits_with_non_zero>
+postcheck:pass: <failed_test_in_tap_report_is_one>
+postcheck:pass: <testreport_json_exists>
+postcheck:pass: <testreport_adoc_exists>
+postcheck:pass: <testreport_json_num_failed_is_1>
+postcheck:pass: <native_execution_exits_with_non_zero>
+postcheck:pass: <failed_test_in_tap_report_is_one>
+postcheck:pass: <testreport_json_exists>
+postcheck:pass: <testreport_adoc_exists>
+postcheck:pass: <testreport_json_num_failed_is_1>
+postcheck:----
+postcheck:FAILED CHECKS: 0
+INSTALLATION SUCCEEDED
+----
+
+If the installation fails, please include the installer's output in your ticket.
+Also, please attach an archive that contains files under `target/commandunit/install` (Create it by `tar cvzf install-report.tar.gz target/commandunit/install`).
+
+To report a problem in the installer, please visit link:https://github.com/dakusui/commandunit-installer/issues[here].
 
 [bibliography]
 == References
