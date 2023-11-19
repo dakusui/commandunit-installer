@@ -97,6 +97,16 @@ To use "native" mode, give `--native` option to `commandunit`.
 commandunit --native
 ----
 
+`commandunit` generates intermediate files to accelerate its execution.
+Those intermediate files will be reused if source test files are not updated by default.
+However, this mechanism will get confused in case the files are generated for "native" mode but reused by normal mode or vice versa.
+To remove those internal files, use `--clean` option.
+
+.`--clean` option
+----
+commandunit --clean
+----
+
 To show the help, use `--help` option.
 
 .Help
@@ -160,46 +170,37 @@ You can describe the operation to be verified in this test.
 This attribute is currently a placce-holder and not used by the `commandunit`.
 It may be a part of `testreport.adoc` in future, though.
 
-====
 [source,yaml]
 ----
   description:
     - Call 'abort' function define in core.rc.
     - This test is to illustrate the usage of the function.
 ----
-====
 
 `environmentVariables`:: An object.
 You can store key-value pair whose key is a name of an environment variable.
 The following example defines an environment variable `SCRITPS_DIR` and it will be available from the command defined by `cmd` and `args`.
-
-====
 [source,yaml]
 ----
   environmentVariables:
     SCRIPTS_DIR: "${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts"
 ----
-====
 
 `source`:: An array you can list files to be sourced before the command (`cmd`) is executed.
-
-====
 [source,yaml]
 ----
   source:
-    - ${COMMANDUNIT_DEPENDENCIES_ROOT}/bud/lib/core.rc
-    - ${COMMANDUNIT_HOSTFSROOT_MOUNTPOINT}/${COMMANDUNIT_PWD}/src/main/scripts/target_lib.rc
+    - ${COMMANDUNIT_BUILTIN_ROOT}/bud/lib/core.rc
+    - ${COMMANDUNIT_PROJECT_DIR}/src/main/scripts/target_lib.rc
 ----
-====
+In this example, a built-in library `core.rc` and a library under test `target_lib.rc` are sourced.
+Functions defined in those files can be executed from the `cmd` attribute.
 
 `cmd`(a string) and `args`(an array of strings)::
 A command (or more generally an "executable", such as a function) to be executed and arguments to be passed to the command.
 The following example executes a function, which is defined in `bud/core.rc`.
 this example will execute a command line: `assert_that HELLO {startsb}{startsb} hello == Hello {endsb}{endsb}`
-
 .`cmd` and `args` example
-
-====
 [source,yaml]
 ----
   cmd: assert_that
@@ -211,7 +212,6 @@ this example will execute a command line: `assert_that HELLO {startsb}{startsb} 
     - Hello
     - "]]"
 ----
-====
 
 ==== `then` clause
 
@@ -226,14 +226,13 @@ Currently available predicate factory names are following:
 - `EQUAL`
 - `NOT_EQUAL`
 
-====
 [source,yaml]
 ----
-  exitCode:
+  # noinspection YAMLIncompatibleTypes
+exitCode:
     - NOT_EQUAL
     - 0
 ----
-====
 
 `stdout` and `stderr`:: An object.
 You can describe the expectation for `stdout` and `stderr` of `cmd` in `when` clause.
@@ -245,49 +244,30 @@ If a matching line for a pattern in `present` attribute is find in the target st
 If and only if all the conditions defined for `present` are satisfied, the target stream will be considered "pass" for `present`.
 For `absent`, if and only if none of the conditions defined for it are satisfied, the tatarget stream will be considered "pass".
 Following is an example, where nothing should be output to `stdout`.
-====
+
+
 [source,yaml]
 ----
   stdout:
     absent:
       - REGEX:.+
 ----
-====
 
-==== Requirements for "native" mode
+==== Built-in Environment Variables
 
-The `commandunit` can be used without using Docker.
+Following is a list of built-in environment variables of `commandunit`.
 
-- `tap`::
+COMMANDUNIT_PROJECT_DIR:: The top level directory of you project.
+The actual value can be different depending on whether you are using `commandunit` in "native" mode or not.
+COMMANDUNIT_BUILTIN_ROOT:: The directory under which built-ins are stored.
+It points a directory under `+{commandunit-home}+/src/main/scripts/lib`.
 
-==== Environment Variables
-
-Following is the list of built-in environment variables of `commandunit`.
-
-`COMMANDUNIT_DEPENDENCIES_ROOT`::
-A directory which stores built-in dependencies of `commandunit`.
-(example: `/app/dependencies`).
-`COMMANDUNIT_DIR`::
-A directory which stores the project configuration.
-(example: `/var/lib/commandunit/Users/hiroshi.ukai/Documents/github/commandunit-example/src/test/.commandunit`).
-`COMMANDUNIT_HOME`:: (internal)A home directory of the `commandunit`.
-(example: `/app`).
-`COMMANDUNIT_HOSTFSROOT_MOUNTPOINT`::
-A directory at which host side's root directory.
-(example: `/var/lib/commandunit`).
-`COMMANDUNIT_INDOCKER`:: An environment to check if this `commandunit` is executed as a docker container or not.
-(example: `true`).
-`COMMANDUNIT_LOGLEVEL`:: An environment variable to control the loglevel.
-Valid values are `ERROR`, `INFO`, and `DEBUG`.
-(example: `ERROR`).
-`COMMANDUNIT_PWD`::
-A project base directory in the host side's representation, not inside the docker container.
-(example: `/Users/hiroshi.ukai/Documents/github/commandunit-example`).
+For more details, check link:https://dakusui.github.io/commandunit/handbookProgramming.html#_built_ins[Built-ins].
 
 ==== Built-in Library
 
 The `commandunit` has a set of libraries to make it easy to write tests.
-The source of them can be found here: https://github.com/dakusui/commandunit/tree/main/src/main/scripts/dependencies/bud/lib[Built-in Libraries]
+The details of them can be found here: link:https://dakusui.github.io/commandunit/handbookProgramming.html#_built_ins[Built-ins]
 
 In this section, useful functions for testing will be walked through.
 
@@ -318,9 +298,9 @@ An error will be reported if it is not a malformed JSON string.
 If the same key appears, the second overrides the first.
 `json_array_append`:: prints a JSON array by appending an array (second argument) to the other (first argument).
 
-== Default Directory Layout
+=== Default Directory Layout
 
-By default, `commandunit` assumes the compatible directory structure with `maven` based project <<maven>>.
+By default, `commandunit` assumes the compatible directory structure with `maven` based project<<maven>>.
 
 [source]
 .Default Directory Layout
@@ -352,7 +332,7 @@ target/
 You can change the directory layout through `commandunit` 's options.
 Check the link:https://dakusui.github.io/commandunit/[documentation.]
 
-=== Test Script Directory and Test Project Configuration Directory
+==== Test Script Directory and Test Project Configuration Directory
 
 By default, `./src/test` is considered a directory that stores your test scripts.
 You can specify it by `--test-srcdir` option of the `commandunit`.
@@ -367,7 +347,10 @@ src/
 
 Right under the test script directory, you can place a test project configuration directory.
 
-=== Files in Report Directory
+A directory named `.jsonpp` directory under test project configuration directory will be added to `JF_PATH` environment variable.
+So that you can reference a file under it from `$extends` attribute.
+
+==== Files in Report Directory
 
 Following is the content of "report directory" after `commandunit` execution.
 You can specify a report directory by `--test-reportdir` option of commandunit and its default is `target/commandunit/report`.
@@ -420,7 +403,7 @@ To browse the rendered report, following tools will be useful.
 
 In case you need to render it into an html file, you can use a command line tool called `asciidoctor` <<asciidoc2html>>.
 
-=== Work Directory
+==== Work Directory
 
 Under work directory, `commandunit` generates internal files that usually you are not interested in.
 You can specify the path of the directory by `--test-workdir`, and its default is `target/commandunit/work`.
