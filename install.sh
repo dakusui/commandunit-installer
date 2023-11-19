@@ -32,6 +32,19 @@ function read_std() {
   return "${__read_std_exit_code}"
 }
 
+function read_std_thru() {
+  read_std "${@}"
+  local __readthrough_std_stdout_varname="${1}"
+  __readthrough_std_stdout_varname="$(printf '%q' "${__readthrough_std_stdout_varname}")"
+  local __readthrough_std_stderr_varname="${2}"
+  __readthrough_std_stderr_varname="$(printf '%q' "${__readthrough_std_stderr_varname}")"
+  shift
+  shift
+
+  eval 'echo $'"${__readthrough_std_stdout_varname}"
+  eval 'echo $'"${__readthrough_std_stderr_varname}" >&2
+}
+
 function __install_commandunit__clean_installation_reportdir() {
   local _installation_reportdir="${1}"
   echo "Removing ${_installation_reportdir}" >&2
@@ -46,13 +59,16 @@ function __install_commandunit__perform_checks() {
   shift
   mkdir -p "${_session_dir}"
   for _i in "${@}"; do
+    mkdir -p "${_session_dir}/${_i}"
     read_std _stdout _stderr "${_i}" || {
-      echo "${_stdout}" > "${_session_dir}/${_i}.stdout"
-      echo "${_stderr}" > "${_session_dir}/${_i}.stderr"
+      echo "${_stdout}" > "${_session_dir}/${_i}/stdout"
+      echo "${_stderr}" > "${_session_dir}/${_i}/stderr"
       echo "FAIL: <${_i}>" >&2
       _failed=$((_failed + 1))
       continue
     }
+    echo "${_stdout}" > "${_session_dir}/${_i}/stdout"
+    echo "${_stderr}" > "${_session_dir}/${_i}/stderr"
     echo "pass: <${_i}>" >&2
   done
   echo "----"
@@ -70,7 +86,39 @@ function __install_commandunit__checkenv() {
   function does_HOME_bin_exists() {
     [[ -d "${_dest_dir}" ]] || return 1
   }
-  __install_commandunit__perform_checks "${_installation_reportdir}" "pre-check" is_HOME_bin_in_PATH does_HOME_bin_exists
+  function is_yaml2json_installed() {
+    which yaml2json
+  }
+  function is_docker_installed() {
+    which docker
+  }
+  function is_jq_installed() {
+    which jq
+  }
+  function is_bash_installed() {
+    which bash
+  }
+  function is_bash_modern_enough() {
+    # shellcheck disable=SC2034
+    local _o _e _v _a
+    read_std_thru _o _e bash --version
+    readarray -t _a < <(echo "${_o}")
+    _v="$(echo "${_a[0]}"|sed -E 's/.+version ([^\s]+)/\1/' | sed -E 's/([^\s]+)( [^\s]+)+$/\1/')"
+    echo "_v=<${_v}>"
+    [[ "${_v%%.*}" -ge 5 ]]
+  }
+  function docker_run_helloworld_works() {
+    docker run hello-world
+  }
+  function docker_run_mktemp_works() {
+    docker run --env TMPDIR=/tmp -it ubuntu mktemp
+  }
+  __install_commandunit__perform_checks \
+    "${_installation_reportdir}" \
+    "pre-check" \
+    is_HOME_bin_in_PATH does_HOME_bin_exists is_yaml2json_installed is_jq_installed \
+    is_docker_installed docker_run_helloworld_works docker_run_mktemp_works \
+    is_bash_installed is_bash_modern_enough
 }
 
 

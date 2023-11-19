@@ -82,21 +82,31 @@ To try the from your command line, do:
 This will download a "wrapper" script and place it under your `$HOME/bin` directory.
 You need to have the directory in your `PATH` environment variable.
 
-== Design of `commandunit`
-
-The `commandunit` uses `jq-front`<<jq-front>> to let users write tests.
-`jq-front` is a tool that allows you to use inheritances and node references (and more) in JSON files.
-
-When it finds a file ends with `.yaml{plus}{plus}`, the tool converts it to a JSON file first and the converted file will have a suffix `.json{plus}{plus}`.
-Then the `.json{plus}{plus}` files will be converted into '.json' file using `jq-front`.
-(preprocess stage) So, familiarizing yourself with `jq-front` 's syntax will be very useful.
-
-After this preprocessing step is finished, based on the content of the final JSON files, which should contain full-information to execute a test case, `commandunit` executes the test case.
-(run stage)
-
-Then, from the files generated during the "run stage", `commandunit` generates a test report.
 
 == Usage
+
+=== Command Line
+
+`commandunit` has "native" and normal (docker) execution modes.
+The "native" mode uses command line tools installed on your system to execute `commandunit` 's functionality, while normal mode uses a docker image which contains all the necessary dependencies.
+The default is the "normal" mode.
+To use "native" mode, give `--native` option to `commandunit`.
+
+."native" mode
+----
+commandunit --native
+----
+
+To show the help, use `--help` option.
+
+.Help
+----
+commandunit --help
+----
+
+Also, check https://dakusui.github.io/commandunit/handbookCommandLine.html[Command Line Interface Handbook] for more detail.
+
+
 === Test Script Format
 
 Following is an example of a test script defined for `commandunit`.
@@ -339,6 +349,9 @@ target/
 <4> A directory to which `commandunit` stores processed test scripts.
 (work directory)
 
+You can change the directory layout through `commandunit` 's options.
+Check the link:https://dakusui.github.io/commandunit/[documentation.]
+
 === Test Script Directory and Test Project Configuration Directory
 
 By default, `./src/test` is considered a directory that stores your test scripts.
@@ -412,39 +425,61 @@ In case you need to render it into an html file, you can use a command line tool
 Under work directory, `commandunit` generates internal files that usually you are not interested in.
 You can specify the path of the directory by `--test-workdir`, and its default is `target/commandunit/work`.
 
-== Troubleshooting
+== Design of `commandunit`
+
+The `commandunit` uses `jq-front`<<jq-front>> to let users write tests.
+`jq-front` is a tool that allows you to use inheritances and node references (and more) in JSON files.
+
+When it finds a file ends with `.yaml{plus}{plus}`, the tool converts it to a JSON file first and the converted file will have a suffix `.json{plus}{plus}`.
+Then the `.json{plus}{plus}` files will be converted into '.json' file using `jq-front`.
+(preprocess stage) So, familiarizing yourself with `jq-front` 's syntax will be very useful.
+
+After this preprocessing step is finished, based on the content of the final JSON files, which should contain full-information to execute a test case, `commandunit` executes the test case.
+(run stage)
+
+Then, from the files generated during the "run stage", `commandunit` generates a test report.
+
+Check link:https://dakusui.github.io/commandunit/designConcept.html[Design Concept] and link:https://dakusui.github.io/commandunit/designDetail.html[Design Detail] pages of `commandunit` for more detail.
+
+== Installation Troubleshooting
 
 The installer (`install.sh`) gives output like following:
 
 [source, shell]
 ----
 $ ./install.sh
-PERFORMING: PRE-CHECK...
-pass: <is_HOME_bin_in_PATH>
-pass: <does_HOME_bin_exists>
------
-FAILED CHECKS: 0
-INSTALLING commandunit...
-DONE
-PERFORMING: POST-CHECK...
-pass: <installed_executable_is_found_by_which_command>
-pass: <docker_execution_exits_with_non_zero>
-pass: <failed_test_in_tap_report_is_one>
-pass: <testreport_json_exists>
-pass: <testreport_adoc_exists>
-pass: <testreport_json_num_failed_is_1>
-pass: <native_execution_exits_with_non_zero>
-pass: <failed_test_in_tap_report_is_one>
-pass: <testreport_json_exists>
-pass: <testreport_adoc_exists>
-pass: <testreport_json_num_failed_is_1>
------
-FAILED CHECKS: 0
+clean:    Removing target/commandunit/install
+precheck: pass: <is_HOME_bin_in_PATH>
+precheck: pass: <does_HOME_bin_exists>
+precheck: pass: <is_yaml2json_installed>
+precheck: pass: <is_jq_installed>
+precheck: pass: <is_docker_installed>
+precheck: pass: <docker_run_helloworld_works>
+precheck: pass: <docker_run_mktemp_works>
+precheck: pass: <is_bash_installed>
+precheck: pass: <is_bash_modern_enough>
+precheck: ----
+precheck: FAILED CHECKS: 0
+install:  INSTALLING commandunit...
+install:  DONE
+postcheck:pass: <installed_executable_is_found_by_which_command>
+postcheck:pass: <docker_execution_exits_with_non_zero>
+postcheck:pass: <failed_test_in_tap_report_is_one>
+postcheck:pass: <testreport_json_exists>
+postcheck:pass: <testreport_adoc_exists>
+postcheck:pass: <testreport_json_num_failed_is_1>
+postcheck:pass: <native_execution_exits_with_non_zero>
+postcheck:pass: <failed_test_in_tap_report_is_one>
+postcheck:pass: <testreport_json_exists>
+postcheck:pass: <testreport_adoc_exists>
+postcheck:pass: <testreport_json_num_failed_is_1>
+postcheck:----
+postcheck:FAILED CHECKS: 0
 INSTALLATION SUCCEEDED
 ----
 
 If the installation fails, please include the installer's output in your ticket.
-Also, please attach an archive that contains files under `target/commandunit/install` (`tar cvzf install-report.tar.gz target/commandunit/install`).
+Also, please attach an archive that contains files under `target/commandunit/install` (Create it by `tar cvzf install-report.tar.gz target/commandunit/install`).
 
 To report a problem in the installer, please visit link:https://github.com/dakusui/commandunit-installer/issues[here].
 
