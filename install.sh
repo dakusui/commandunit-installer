@@ -247,7 +247,7 @@ if [[ ${#} == 0 ]]; then
 else
   main "${@}"
 fi || {
-  echo "INSTALLATION FAILED!"
+  echo "FAILED!" >&2
   exit 1
 }
-echo "INSTALLATION SUCCEEDED"
+echo "SUCCEEDED" >&2
