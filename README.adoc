@@ -9,6 +9,8 @@ To install it, just run:
 
 [source, bash]
 ----
+git clone https://github.com/dakusui/commandunit-installer.git --branch master --single-branch --depth=1
+cd commandunit-installer
 ./install.sh
 ----
 
