@@ -14,8 +14,6 @@ cd commandunit-installer
 ./install.sh
 ----
 
-For more detail of installation, check <<installation>> section.
-
 To just run tests under `src/main/scripts`, type the following command from your terminal:
 
 [source, bash]
