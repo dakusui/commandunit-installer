@@ -125,10 +125,11 @@ You can find a file in `src/test/scripts/core` directory.
 [source,yaml]
 .Example: `scripts/core/test-cat-yaml.yaml++`
 ----
+
 ---
 "$extends":
-  - core/base-yaml.yaml <1>
-when: <2>
+  - core/base-yaml.yaml # <1>
+when: # <2>
   environmentVariables:
     SCRIPTS_DIR: "${COMMANDUNIT_PROJECT_DIR}/src/main/scripts"
   source:
