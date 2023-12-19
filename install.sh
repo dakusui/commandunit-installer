@@ -83,7 +83,7 @@ function __install_commandunit__checkenv() {
     [[ "${PATH}" == *"${_dest_dir}"* ]] || return 1
   }
   # Check $HOME/bin exists
-  function does_HOME_bin_exists() {
+  function does_HOME_bin_exist() {
     [[ -d "${_dest_dir}" ]] || return 1
   }
   function is_gnused_installed() {
@@ -122,7 +122,7 @@ function __install_commandunit__checkenv() {
   __install_commandunit__perform_checks \
     "${_installation_reportdir}" \
     "pre-check" \
-    is_HOME_bin_in_PATH does_HOME_bin_exists \
+    is_HOME_bin_in_PATH does_HOME_bin_exist \
     is_gnused_installed is_yaml2json_installed is_jq_installed \
     is_docker_installed docker_run_helloworld_works docker_run_mktemp_works \
     is_bash_installed is_bash_modern_enough

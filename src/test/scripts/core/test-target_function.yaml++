@@ -1,0 +1,23 @@
+---
+"$extends":
+  - core/base.json
+when:
+  environmentVariables:
+    SCRIPTS_DIR: "${COMMANDUNIT_PROJECT_DIR}/src/main/scripts"
+  source:
+    - ${COMMANDUNIT_BUILTIN_ROOT}/bud/lib/core.rc
+    - ${SCRIPTS_DIR}/target_lib.rc
+  cmd: target_function
+  args:
+    - Lisa
+then:
+  exitCode:
+    - EQUAL
+    - 0
+  stdout:
+    present:
+      - REGEX:hello
+      - REGEX:Lisa
+  stderr:
+    absent:
+      - REGEX:.+
